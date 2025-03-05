@@ -38,6 +38,7 @@ fi
 usage() {
 cat << EOF
 Usage: Positional arguments for agents360.sh script. 
+./agent360.sh [--args | ARG..] [--args| ARG..] 
 
 --help|-h 			Displays this information 
 
@@ -105,13 +106,6 @@ while [[ $# -gt 0 ]]; do
       ;;
   esac
 done
-
-if [[ $# -eq 0 ]];then
-echo "No argumens provided "
-echo "Exitting the program! "
-usage
-exit 1
-fi
 
 # Accept positional syntax too
 token=${token:=${positional_args[0]}}
