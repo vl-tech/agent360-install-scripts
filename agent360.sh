@@ -537,7 +537,7 @@ system_init(){
 
 check_wget(){
 	get_installer
-	if [[ ! $("wget") ]];then
+	if ! command -v wget &> /dev/null;then
 	echo "Wget command not found"
 	echo "Installing wget"
 	install_wget=$($installer install -y wget)
