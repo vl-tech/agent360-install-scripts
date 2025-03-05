@@ -126,7 +126,17 @@ logging(){
     "$@" >> "$install_log" 2>&1
 }
 
-
+check_wget(){
+	get_installer
+	if ! command -v wget &> /dev/null;then
+	echo "Wget command not found"
+	echo "Installing wget"
+	install_wget=$($installer install -y wget)
+	$install_wget
+	else
+	echo "Wget installed. Continuing instalation"
+	fi
+}
 
 
 error_handling(){
@@ -352,6 +362,7 @@ install_agent360(){
 }
 
 prepare_conf(){
+	check_wget
 	echo "> Preparing the agent360 configuration..."
 	if [[ !(-f $agent_config_file) || !($(cat ${agent_config_file} | wc -l) -gt 1) ]]; then
 		logging wget -qO $agent_config_file $config_tpl && echo -e "\\e[32m  [SUCCESS] The default template for agent360 has been installed\\e[m" || error_handling
@@ -535,17 +546,7 @@ system_init(){
 }
 
 
-check_wget(){
-	get_installer
-	if ! command -v wget &> /dev/null;then
-	echo "Wget command not found"
-	echo "Installing wget"
-	install_wget=$($installer install -y wget)
-	$install_wget
-	else
-	echo "Wget installed. Continuing instalation"
-	fi
-}
+
 
 ################
 ## Run script ##
