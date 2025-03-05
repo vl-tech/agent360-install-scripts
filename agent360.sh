@@ -580,6 +580,5 @@ create_user
 echo "> Creating the service..."
 system_init
 
-echo "In case you need to uninstall the agent360 completely you can run the following script"
-echo "sh <(curl https://raw.githubusercontent.com/plesk/kb-scripts/master/360-monitoring-uninstall/360-monitoring-uninstall.sh || wget -O - https://raw.githubusercontent.com/plesk/kb-scripts/master/360-monitoring-uninstall/360-monitoring-uninstall.sh)" 
+## Will add the uninstall script reference later
 echo "Agent is Configured! Enjoy!"
