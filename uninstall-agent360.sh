@@ -48,7 +48,7 @@ fi
 
 handle_cmd 'systemctl stop agent360' 'The service agent360 has been stopped'
 handle_cmd 'systemctl disable agent360' 'The service agent360 has been disabled'
-handle_cmd 'pip3 uninstall -y agent360' 'The Python modules for 360 Monitoring have been removed'
+handle_cmd 'pip3 uninstall -y --break-system-packages agent360' 'The Python modules for 360 Monitoring have been removed'
 handle_cmd 'userdel agent360' 'The user agent360 has been deleted'
 
 if [[ -f /etc/systemd/system/agent360.service ]] || [[ -f /etc/systemd/system/agent360 ]] ; then
