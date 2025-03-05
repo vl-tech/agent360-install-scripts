@@ -106,15 +106,17 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-
+if [[ $# -eq 0 ]];then
+echo "No argumens provided "
+echo "Exitting the program! "
+usage
+exit 1
+fi
 
 # Accept positional syntax too
 token=${token:=${positional_args[0]}}
 tags=${tags:=${positional_args[1]:-}}
-if [[ $# -eq 0 ]];then
-echo "No argumens provided "
-echo "Exitting the program! "
-fi
+
 #######################
 ## Library functions ##
 #######################
