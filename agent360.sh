@@ -518,6 +518,8 @@ EOF
 	service_check $agent_bsd_service
 }
 
+
+
 system_init(){
 	get_agent_path
 	if [ $OS_NAME == 'freebsd' ]; then
@@ -529,6 +531,19 @@ system_init(){
 	else
 		echo -e "\\e[31m  [ERROR] The script could not found a way to configure the service\\e[m"
 		 echo "Debugging mode OS NAME IS - $OS_NAME, OS VERSION IS $OS_VERSION"
+	fi
+}
+
+
+check_wget(){
+	get_installer
+	if [[ ! $("wget") ]];then
+	echo "Wget command not found"
+	echo "Installing wget"
+	install_wget=$($installer install -y wget)
+	$install_wget
+	else
+	echo "Wget installed. Continuing instalation"
 	fi
 }
 
