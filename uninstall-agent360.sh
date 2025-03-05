@@ -1,4 +1,4 @@
-#!/bin/bash -x
+#!/bin/bash
 ### Copyright 1999-2023. Plesk International GmbH.
 
 ###############################################################################
@@ -30,6 +30,22 @@ handle_cmd () {
   fi
 }
 
+venv_dir="/opt/agent360-venv"
+remove_symlinks_venv(){
+
+if $symlink_agent ;then
+  echo -e "Removing /usr/local/bin/agent360"
+  sleep 1
+  unlink /usr/local/bin/agent360
+fi
+
+if $symlink_hello ;then
+  echo -e "Removing /usr/local/bin/hello360"
+  sleep 1
+  unlink /usr/local/bin/hello360
+fi
+}
+
 handle_cmd 'systemctl stop agent360' 'The service agent360 has been stopped'
 handle_cmd 'systemctl disable agent360' 'The service agent360 has been disabled'
 handle_cmd 'pip3 uninstall -y agent360' 'The Python modules for 360 Monitoring have been removed'
@@ -58,15 +74,19 @@ if [[ -f /var/log/agent360.log ]] || [[ -f /var/log/agent360-install.log ]]; the
 fi
 
 if [[ -d $agent360_venv ]];then
-echo "agent360 venv exists"
-fi
-read -r -p "Do you want to delete it (y/n)? " venv_choice
+  echo -e "\\e[35m[INFO] Python Virtual environment folder  $venv_dir  exists\\e[m "
+
+  read -r -p "[Q] Do you want to delete it (y/n)? " venv_choice
+  echo
 if [[ $venv_choice == "y" ]];then
-rm -rf $agent360_venv
-echo "$agent360_venv is removed"
-else
-echo "Not removed"
-exit 0
+  rm -rf $agent360_venv
+  echo -e "\\e[32m [SUCCESS] Python virtual environment $agent360_venv was removed\\e[m"
+  echo -e "\\e[32m [SUCCESS] Removing venv symlinks\\e[m"
+  echo
+  remove_symlinks_venv
+  sleep 1
+  echo -e "\\e[32m [SUCCESS] /usr/local/bin/hello360 and /usr/local/bin/agent360 removed\\e[m"
+fi
 fi
 echo
 echo -e "\\e[34m[INFO] Please wait for 15 minutes and, then, remove the server from 360 Monitoring > Servers\\e[m"

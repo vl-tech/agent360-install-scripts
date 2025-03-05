@@ -1,4 +1,4 @@
-#!/bin/bash 
+#!/bin/bash
 
 #: Variables :#
 set -o nounset
@@ -34,26 +34,6 @@ then
    exit 1
 fi
 
-
-usage() {
-cat << EOF
-Usage: Positional arguments for agents360.sh script. 
-
---help|-h 			Displays this information 
-
---skip-deps --skip-dep-install  Skip OS package instalation  				 
-
---user-venv 			Install agent in virtual environment 		 
-
---force 			Install even if agent360 is already instaled 
-
---token <token value> 		360 Monitoring account User ID:
-
-
-EOF
-
-
-}
 #######################
 ## PROCESS ARGUMENTS ##
 #######################
@@ -90,15 +70,10 @@ while [[ $# -gt 0 ]]; do
       shift
       ;;
     # As I read it the older code just accept add-websites as an argument
-	# This does not work. The function seems to be missing. probably because it is being added from the website directly
     add-websites|--add-websites)
       automon=1
       shift
       ;;
-	--help|--h)
-	  usage
-	  exit 1
-	;;
     *)
       positional_args+=("$1")
       shift;
@@ -106,15 +81,10 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-
-
 # Accept positional syntax too
 token=${token:=${positional_args[0]}}
 tags=${tags:=${positional_args[1]:-}}
-if [[ $# -eq 0 ]];then
-echo "No argumens provided "
-echo "Exitting the program! "
-fi
+
 #######################
 ## Library functions ##
 #######################
@@ -125,19 +95,6 @@ logging(){
 	echo -e '['$dt'] Executing: '$@ >> "$install_log" 2>&1
     "$@" >> "$install_log" 2>&1
 }
-
-check_wget(){
-	get_installer
-	if ! command -v wget &> /dev/null;then
-	echo "Wget command not found"
-	echo "Installing wget"
-	install_wget=$($installer install -y wget)
-	$install_wget
-	else
-	echo "Wget installed. Continuing instalation"
-	fi
-}
-
 
 error_handling(){
 	rc=$?
@@ -245,33 +202,15 @@ get_os_release(){
 	fi
 }
 
-
 get_os_version(){
-	# VERSION=$(cat /etc/os-release | grep ^VERSION | head -1 | cut -d'"' -f2 | cut -d'.' -f1)
-	# if [[ -n $VERSION ]];then
-	# 	OS_VERSION=$VERSION
-	# elif [[ $VERSION == "7 (Core)" ]];then
-	# 	OS_VERSION="7"
-	# else
-	# 	OS_VERSION=""
-	# 	echo -e "\\e[31m  [ERROR] Unable to find the Linux distribution version\\e[m"
-	# 	exit 1
-	# fi
-	
-	VERSION=$(cat /etc/os-release | grep -E "^VERSION" | head -1 | cut -d'"' -f2 | cut -d'.' -f1)
-	if [[ -n $VERSION ]];then
+	VERSION=$(cat /etc/os-release | grep ^VERSION | head -1 | cut -d'"' -f2 | cut -d'.' -f1)
+	if [[ -n $VERSION ]]; then
 		OS_VERSION=$VERSION
-
-        if [[ $OS_VERSION == '7 (Core)' ]];then
-        OS_VERSION=$(cat /etc/os-release | grep ^VERSION | head -1 | cut -d'"' -f2 | awk '{print $1}')
-        fi
 	else
 		OS_VERSION=""
 		echo -e "\\e[31m  [ERROR] Unable to find the Linux distribution version\\e[m"
 		exit 1
 	fi
-
-
 }
 
 get_installer(){
@@ -289,7 +228,6 @@ get_installer(){
 check_agent360(){
    if command -v agent360 &> /dev/null; then
       agent360_installed=true
-	  
    else
        if [[ $force == 0 ]]; then
          if id agent360 &>/dev/null; then
@@ -329,7 +267,7 @@ prepare_pkgs(){
 
 install_agent360(){
 	ins_state=$1
-	if [ ! $ins_state ]; then
+	if [ !$ins_state ]; then
 		echo "> Installing agent360..."
 	else
 		echo "> Upgrading agent360..."
@@ -343,10 +281,7 @@ install_agent360(){
 		logging source $venv_dir/bin/activate && echo -e "\\e[32m  [SUCCESS] Virtual environment has been activated\\e[m" || error_handling fatal
 		# Install agent360 in virtual environment
 		logging pip3 install --ignore-installed -r $requirements_file --upgrade && echo -e "\\e[32m  [SUCCESS] Finished with agent360\\e[m" || error_handling fatal
-		
-		## Disabled deactivation of venv because it exists the script
-		# logging Deactivate
-		echo "Creating Symlinks $venv_dir/bin/agent360 /usr/local/bin/agent360"
+		logging deactivate
 		# Create a symlink for global access
 		logging ln -sf $venv_dir/bin/agent360 /usr/local/bin/agent360
 		logging ln -sf $venv_dir/bin/hello360 /usr/local/bin/hello360
@@ -362,7 +297,6 @@ install_agent360(){
 }
 
 prepare_conf(){
-	check_wget
 	echo "> Preparing the agent360 configuration..."
 	if [[ !(-f $agent_config_file) || !($(cat ${agent_config_file} | wc -l) -gt 1) ]]; then
 		logging wget -qO $agent_config_file $config_tpl && echo -e "\\e[32m  [SUCCESS] The default template for agent360 has been installed\\e[m" || error_handling
@@ -420,7 +354,7 @@ service_check(){
 			logging chkconfig agent360 on &&
 			logging service agent360 start &&
 			echo -e "\\e[32m  [SUCCESS] The service has been configured\\e[m"
-		elif [ ]; then
+		elif []; then
 			logging chmod +x $agent_bsd_service &&
 			logging echo $'\n'"agent360_enable=\"YES\"" >> /etc/rc.conf &&
 			logging service agent360 start &&
@@ -439,36 +373,12 @@ systemD_config(){
 
 		[Service]
 		ExecStart=$agent360_path
-		Restart=on-failure
 		User=root
 
 		[Install]
 		WantedBy=multi-user.target
 EOF
 	service_check $agent_sysd_service
-}
-
-
-systemD_config_venv(){
-	venv_command_path='/opt/agent360-venv/bin/agent360'
-	create_user
-	echo "Setting up user agent360 permissions"
-	chown -R agent360:agent360 $venv_command_path
-
-	cat <<EOF >$agent_sysd_service
-		[Unit]
-		Description=agent360
-
-		[Service]
-		ExecStart=$venv_command_path
-		Restart=on-failure
-
-		User=agent360
-
-		[Install]
-		WantedBy=multi-user.target
-EOF
-service_check $agent_sysd_service
 }
 
 bsd_config(){
@@ -532,13 +442,10 @@ system_init(){
 	get_agent_path
 	if [ $OS_NAME == 'freebsd' ]; then
 		bsd_config
-	elif [[ $use_venv -eq 1 ]];then
-		systemD_config_venv
 	elif [[ ("${rhel_os_list[*]}" == *"$OS_NAME"* && $OS_VERSION -ge 7) || ($OS_NAME == 'ubuntu' && $OS_VERSION -ge 18) || ($OS_NAME == 'debian' && $OS_VERSION -ge 10) ]]; then
 		systemD_config
 	else
 		echo -e "\\e[31m  [ERROR] The script could not found a way to configure the service\\e[m"
-		 echo "Debugging mode OS NAME IS - $OS_NAME, OS VERSION IS $OS_VERSION"
 	fi
 }
 
@@ -573,6 +480,3 @@ create_user
 
 echo "> Creating the service..."
 system_init
-
-## Will add the uninstall script reference later
-echo "Agent is Configured! Enjoy!"
