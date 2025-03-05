@@ -343,7 +343,7 @@ install_agent360(){
 		logging source $venv_dir/bin/activate && echo -e "\\e[32m  [SUCCESS] Virtual environment has been activated\\e[m" || error_handling fatal
 		# Install agent360 in virtual environment
 		logging pip3 install --ignore-installed -r $requirements_file --upgrade && echo -e "\\e[32m  [SUCCESS] Finished with agent360\\e[m" || error_handling fatal
-		echo "Before deactivate!"
+		
 		## Disabled deactivation of venv because it exists the script
 		# logging Deactivate
 		echo "Creating Symlinks $venv_dir/bin/agent360 /usr/local/bin/agent360"
