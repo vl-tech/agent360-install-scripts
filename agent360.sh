@@ -449,7 +449,6 @@ EOF
 }
 
 
-
 systemD_config_venv(){
 	venv_command_path='/opt/agent360-venv/bin/agent360'
 	create_user
@@ -529,8 +528,6 @@ EOF
 	service_check $agent_bsd_service
 }
 
-
-
 system_init(){
 	get_agent_path
 	if [ $OS_NAME == 'freebsd' ]; then
@@ -544,9 +541,6 @@ system_init(){
 		 echo "Debugging mode OS NAME IS - $OS_NAME, OS VERSION IS $OS_VERSION"
 	fi
 }
-
-
-
 
 ################
 ## Run script ##
