@@ -22,7 +22,7 @@ agent360_version="1.3.1"
 rhel_os_list=( "centos" "almalinux" "cloudlinux" "amazon" "fedora" "sangoma" "oracle" "scientific" "freepbx" "rhel" "virtuozzo" "rocky" )
 deb_os_list=( "ubuntu" "debian" )
 free_os_list=( "freebsd" )
-
+servers_tab_url="https://app.360monitoring.com/servers/overview"
 default_pkgs=( "gcc" )
 deb_py_pkgs=( "python3-dev" "python3-setuptools" "python3-venv" "python3-pip" )
 rhel_py_pkgs=( "which" "python3" "python3-devel" "libevent-devel" )
@@ -38,7 +38,8 @@ fi
 usage() {
 cat << EOF
 Usage: Positional arguments for agents360.sh script. 
-./agent360.sh [--args | ARG..] [--args| ARG..] 
+
+./agent360.sh [--args| ARG..] [--args| ARG..] 
 
 --help|-h 			Displays this information 
 
@@ -107,9 +108,33 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+
+
+# Chekcing the positional arguments. If empty will return the below message instead of 
+# ./agent360.sh: line 114: positional_args[0]: unbound variable
+
+if [[ ${#positional_args[@]} -eq 0 || -z "${positional_args[0]}" ]]; then
+    echo -e "\\e[31m[WARNING] Please provide User ID or Token to register your server\\e[m"
+	echo
+	echo -e "\\e[31m[WARNING] You can check it at 360monitoring.com -> Servers -> Add server\\e[m"
+	echo
+	echo -e "\\e[31mDirect page URL: ${servers_tab_url}\\e[m"
+	usage
+    exit 1
+fi
 # Accept positional syntax too
 token=${token:=${positional_args[0]}}
 tags=${tags:=${positional_args[1]:-}}
+# Checking for valid token. From what I see so far token is 24 characters in length 
+if [[ ${#token} -lt 24 ]];then
+	echo -e "\\e[31m[CRITICAL] Invalid Token. Please enter valid User ID\\e[m"
+	echo
+	echo -e "\\e[31m[WARNING] You can check it at 360monitoring.com -> Servers -> Add server\\e[m"
+	echo
+	echo -e "\\e[31mDirect page URL: ${servers_tab_url}\\e[m"
+	exit 1
+fi
+
 
 #######################
 ## Library functions ##
@@ -121,12 +146,13 @@ logging(){
 	echo -e '['$dt'] Executing: '$@ >> "$install_log" 2>&1
     "$@" >> "$install_log" 2>&1
 }
-
+## Checking if wget is installed. If not will activate below script to install it.
+## This is due to an error that occurs when its not installed
 check_wget(){
 	get_installer
 	if ! command -v wget &> /dev/null;then
-	echo "Wget command not found"
-	echo "Installing wget"
+	echo -e "\\e[31m[CRITICAL] Wget command not found\\e[m"
+	echo -e "Installing wget"
 	install_wget=$($installer install -y wget)
 	$install_wget
 	else
@@ -241,13 +267,12 @@ get_os_release(){
 	fi
 }
 
-
+## Changed the behaviour ofthis check due to issue with Cento 7 that has (core) in its name 
+## Reported error: (Core): syntax error in expression (error token is "(Core)")
 get_os_version(){
 	# VERSION=$(cat /etc/os-release | grep ^VERSION | head -1 | cut -d'"' -f2 | cut -d'.' -f1)
 	# if [[ -n $VERSION ]];then
 	# 	OS_VERSION=$VERSION
-	# elif [[ $VERSION == "7 (Core)" ]];then
-	# 	OS_VERSION="7"
 	# else
 	# 	OS_VERSION=""
 	# 	echo -e "\\e[31m  [ERROR] Unable to find the Linux distribution version\\e[m"
@@ -341,6 +366,7 @@ install_agent360(){
 		logging pip3 install --ignore-installed -r $requirements_file --upgrade && echo -e "\\e[32m  [SUCCESS] Finished with agent360\\e[m" || error_handling fatal
 		
 		## Disabled deactivation of venv because it exists the script
+		## And we need to setup the systemd service regardless if it is using venv or not
 		# logging Deactivate
 		echo "Creating Symlinks $venv_dir/bin/agent360 /usr/local/bin/agent360"
 		# Create a symlink for global access
@@ -358,6 +384,8 @@ install_agent360(){
 }
 
 prepare_conf(){
+	## Placed the wget check here because it is where it fails when preparing the installation
+	## This will later be called after install_agent360 function at the Run script section
 	check_wget
 	echo "> Preparing the agent360 configuration..."
 	if [[ !(-f $agent_config_file) || !($(cat ${agent_config_file} | wc -l) -gt 1) ]]; then
@@ -428,7 +456,7 @@ service_check(){
 		echo -e "\\e[31m  [ERROR] The service has not been created.\\e[m"
 	fi
 }
-
+## Added Restart on failure and another function to setup systemd service with venv
 systemD_config(){
 	cat <<EOF >$agent_sysd_service
 		[Unit]
@@ -445,6 +473,8 @@ EOF
 	service_check $agent_sysd_service
 }
 
+## Systemd service working with agent360 user and venve. I'v set it for better security.
+## Needs testing if it will be able to report all metrics . Possible permission denied errors
 
 systemD_config_venv(){
 	venv_command_path='/opt/agent360-venv/bin/agent360'
@@ -529,6 +559,7 @@ system_init(){
 	get_agent_path
 	if [ $OS_NAME == 'freebsd' ]; then
 		bsd_config
+		## Added this to trigger service configuration with venv setup
 	elif [[ $use_venv -eq 1 ]];then
 		systemD_config_venv
 	elif [[ ("${rhel_os_list[*]}" == *"$OS_NAME"* && $OS_VERSION -ge 7) || ($OS_NAME == 'ubuntu' && $OS_VERSION -ge 18) || ($OS_NAME == 'debian' && $OS_VERSION -ge 10) ]]; then
