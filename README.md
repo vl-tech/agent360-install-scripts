@@ -7,7 +7,7 @@ Usage: Positional arguments for agents360.sh script.
 
 ./agent360.sh [--args| ARG..] [--args| ARG..]
 
---help|-h                       Displays this information
+--help|--h                       Displays this information
 
 --skip-deps --skip-dep-install  Skip OS package instalation
 
