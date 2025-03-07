@@ -54,18 +54,15 @@ check_ubuntu_release(){
     handle_cmd 'systemctl disable agent360' 'The service agent360 has been disabled'
     handle_cmd 'pip3 uninstall -y --break-system-packages agent360' 'The Python modules for 360 Monitoring have been removed'
     handle_cmd 'userdel agent360' 'The user agent360 has been deleted'
-  else
-  handle_cmd 'systemctl stop agent360' 'The service agent360 has been stopped'
-  handle_cmd 'systemctl disable agent360' 'The service agent360 has been disabled'
-  handle_cmd 'pip3 uninstall -y  agent360' 'The Python modules for 360 Monitoring have been removed'
-  handle_cmd 'userdel agent360' 'The user agent360 has been deleted'
-fi
   fi
 }
 ## Added this function to check for the ubuntu version. Ubunu23+ requites --break-system-packages argument to install modules
 ## Alternatively can be done via apt-get install python-agent360 but it is not yet added to any ubuntu repos
 check_ubuntu_release
-
+handle_cmd 'systemctl stop agent360' 'The service agent360 has been stopped'
+handle_cmd 'systemctl disable agent360' 'The service agent360 has been disabled'
+handle_cmd 'pip3 uninstall -y  agent360' 'The Python modules for 360 Monitoring have been removed'
+handle_cmd 'userdel agent360' 'The user agent360 has been deleted'
 
 if [[ -f /etc/systemd/system/agent360.service ]] || [[ -f /etc/systemd/system/agent360 ]] ; then
   handle_cmd 'rm -f /etc/systemd/system/agent360*' 'The configuration of the service agent360 has been removed'
