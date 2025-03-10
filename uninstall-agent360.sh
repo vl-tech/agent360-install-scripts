@@ -127,6 +127,7 @@ if [[ $venv_choice == "y" ]];then
   echo -e "\\e[32m[SUCCESS] Python virtual environment $agent360_venv was removed\\e[m"
   echo -e "\\e[32m[SUCCESS] Removing venv symlinks\\e[m"
   echo
+  # No need to call remove symlinks because we are removing the venv folder anyway
   # remove_symlinks_venv
   sleep 1
   echo -e "\\e[32m[SUCCESS] /usr/local/bin/hello360 and /usr/local/bin/agent360 removed\\e[m"
