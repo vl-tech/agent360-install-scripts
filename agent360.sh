@@ -487,7 +487,7 @@ systemD_config_venv(){
 	create_user
 	echo "Setting up user agent360 permissions"
 	chown -R agent360:agent360 $venv_command_path
-
+	chown -R agent360:agent360 $venv_dir
 	cat <<EOF >$agent_sysd_service
 		[Unit]
 		Description=agent360
