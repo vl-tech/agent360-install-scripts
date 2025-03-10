@@ -30,7 +30,7 @@ rhel_py_pkgs=( "which" "python3" "python3-devel" "libevent-devel" )
 #: Check root privilege :#
 if [ "$(id -u)" != "0" ];
 then
-   echo -e "\\e[31m  [ERROR] Installer needs root permission to run, please run as root.\\e[m"
+   echo -e "\\e[31m[ERROR] Installer needs root permission to run, please run as root.\\e[m"
    exit 1
 fi
 
@@ -165,10 +165,10 @@ error_handling(){
 	rc=$?
 	if [ "$rc" != "0" ]; then
 		if [ $# -eq 0 ]; then
-			echo -e "\\e[31m  [ERROR] An error occurred. Please check the log ${install_log} for details\\e[m"
+			echo -e "\\e[31m[ERROR] An error occurred. Please check the log ${install_log} for details\\e[m"
 		else
-			echo -e "\\e[31m  [CRITICAL] A critical error occurred!\\e[m"
-			echo -e "\\e[31m  The installation aborted, please check the log ${install_log}\\e[m"
+			echo -e "\\e[31m[CRITICAL] A critical error occurred!\\e[m"
+			echo -e "\\e[31mThe installation aborted, please check the log ${install_log}\\e[m"
 			exit 1
 		fi
 	fi
@@ -335,7 +335,7 @@ get_agent_path(){
 install(){
 	pkg_mng=$1
 	program=${@:2}
-	logging $pkg_mng install -y $program && echo -e "\\e[32m  [SUCCESS] All the necessary packages were installed\\e[m" || error_handling fatal
+	logging $pkg_mng install -y $program && echo -e "\\e[32m[SUCCESS] All the necessary packages were installed\\e[m" || error_handling fatal
 }
 
 prepare_pkgs(){
@@ -364,10 +364,10 @@ install_agent360(){
 
 	if [ "$use_venv" -eq 1 ]; then
 		# Create and activate virtual environment
-		logging python3 -m venv $venv_dir && echo -e "\\e[32m  [SUCCESS] Virtual environment has been created\\e[m" || error_handling fatal
-		logging source $venv_dir/bin/activate && echo -e "\\e[32m  [SUCCESS] Virtual environment has been activated\\e[m" || error_handling fatal
+		logging python3 -m venv $venv_dir && echo -e "\\e[32m[SUCCESS] Virtual environment has been created\\e[m" || error_handling fatal
+		logging source $venv_dir/bin/activate && echo -e "\\e[32m[SUCCESS] Virtual environment has been activated\\e[m" || error_handling fatal
 		# Install agent360 in virtual environment
-		logging pip3 install --ignore-installed -r $requirements_file --upgrade && echo -e "\\e[32m  [SUCCESS] Finished with agent360\\e[m" || error_handling fatal
+		logging pip3 install --ignore-installed -r $requirements_file --upgrade && echo -e "\\e[32m[SUCCESS] Finished with agent360\\e[m" || error_handling fatal
 		# logging pip3 install --ignore-installed  git+$agent360_repo_source --upgrade && echo -e "\\e[32m [SUCCESS] Installed Agent360 from source repo $agent360_repo_source" || error_handling fatal
 		## Disabled deactivation of venv because it exists the script
 		## And we need to setup the systemd service regardless if it is using venv or not
@@ -382,10 +382,10 @@ install_agent360(){
 			logging pip3 install --ignore-installed --break-system-packages -r $requirements_file --upgrade && echo -e "\\e[32m  [SUCCESS] Finished with agent360\\e[m" || error_handling fatal
 			# logging pip3 install --ignore-installed  git+$agent360_repo_source --break-system-packages && echo -e "\\e[32m [SUCCESS] Installed Agent360 from source repo $agent360_repo_source" || error_handling fatal
 		else
-			logging pip3 install --ignore-installed -r $requirements_file --upgrade && echo -e "\\e[32m  [SUCCESS] Finished with agent360\\e[m" || error_handling fatal
+			logging pip3 install --ignore-installed -r $requirements_file --upgrade && echo -e "\\e[32m[SUCCESS] Finished with agent360\\e[m" || error_handling fatal
 		fi
 	fi
-	echo -e "\\e[32m  [SUCCESS] agent360 installed\\e[m"
+	echo -e "\\e[32m[SUCCESS] agent360 installed\\e[m"
 }
 
 prepare_conf(){
@@ -403,23 +403,23 @@ prepare_conf(){
 		logging hello360 $token $agent_token_file --automon=$automon --tags=$tags
 		error_handling
 		server_id=$(grep server ${agent_token_file} | cut -f2 -d '=' | tr -d ' ')
-		echo -e "\\e[32m  [SUCCESS] The server token has been generated: ${server_id}\\e[m"
+		echo -e "\\e[32m[SUCCESS] The server token has been generated: ${server_id}\\e[m"
 	else
 		server_id=$(agent360 info | grep 'Server:' | cut -d':' -f2 | tr -d ' ')
-		echo -e "\\e[33m  [NOTE] The server already has the ID in ${agent_token_file}: ${server_id}\\e[m"
+		echo -e "\\e[33m[NOTE] The server already has the ID in ${agent_token_file}: ${server_id}\\e[m"
 	fi
 }
 
 create_user(){
 	if id agent360 &>/dev/null; then
-		echo -e "\\e[33m  [NOTE] The user already exists\\e[m"
+		echo -e "\\e[33m[NOTE] The user already exists\\e[m"
 	else
 		logging useradd --system --user-group --key USERGROUPS_ENAB=yes -M agent360 --shell /bin/false
 		error_handling
 		if id agent360 &>/dev/null; then
-			echo -e "\\e[32m  [SUCCESS] The user has been created\\e[m"
+			echo -e "\\e[32m[SUCCESS] The user has been created\\e[m"
 		else
-			echo -e "\\e[31m  [ERROR] Failed to create the user\\e[m"
+			echo -e "\\e[31m[ERROR] Failed to create the user\\e[m"
 		fi
 	fi
 
@@ -436,14 +436,14 @@ create_user(){
 service_check(){
 	srv_type=$1
 	if [ $(cat ${srv_type} | wc -l) -gt 0 ]; then
-		echo -e "\\e[32m  [SUCCESS] The service has been created\\e[m"
+		echo -e "\\e[32m[SUCCESS] The service has been created\\e[m"
 		echo "> Trying to enable and start the service..."
 		if [ $srv_type == $agent_sysd_service ]; then
 			logging chmod 644 $agent_sysd_service &&
 			logging systemctl daemon-reload &&
 			logging systemctl enable agent360 &&
 			logging systemctl start agent360 &&
-			echo -e "\\e[32m  [SUCCESS] The service has been configured\\e[m"
+			echo -e "\\e[32m[SUCCESS] The service has been configured\\e[m"
 		elif [ $srv_type == $agent_sysv_service ]; then
 			logging chmod +x $agent_sysv_service &&
 			logging chkconfig --add agent360 &&
@@ -454,11 +454,11 @@ service_check(){
 			logging chmod +x $agent_bsd_service &&
 			logging echo $'\n'"agent360_enable=\"YES\"" >> /etc/rc.conf &&
 			logging service agent360 start &&
-			echo -e "\\e[32m  [SUCCESS] The service has been configured\\e[m"
+			echo -e "\\e[32m[SUCCESS] The service has been configured\\e[m"
 		fi
 		error_handling
 	else
-		echo -e "\\e[31m  [ERROR] The service has not been created.\\e[m"
+		echo -e "\\e[31m[ERROR] The service has not been created.\\e[m"
 	fi
 }
 ## Added Restart on failure and another function to setup systemd service with venv
@@ -574,7 +574,7 @@ system_init(){
 	elif [[ ("${rhel_os_list[*]}" == *"$OS_NAME"* && $OS_VERSION -ge 7) || ($OS_NAME == 'ubuntu' && $OS_VERSION -ge 18) || ($OS_NAME == 'debian' && $OS_VERSION -ge 10) ]]; then
 		systemD_config
 	else
-		echo -e "\\e[31m  [ERROR] The script could not found a way to configure the service\\e[m"
+		echo -e "\\e[31m[ERROR] The script could not found a way to configure the service\\e[m"
 		 echo "Debugging mode OS NAME IS - $OS_NAME, OS VERSION IS $OS_VERSION"
 	fi
 }
@@ -588,7 +588,7 @@ touch $log_file
 
 #: MAIN BODY :#
 echo "> Getting the Linux distribution name and version..."
-get_os_release && get_os_version && echo -e "\\e[32m  [SUCCESS] Found ${OS_RELEASE} ${OS_VERSION}\\e[m" || echo -e "\\e[31m  [ERROR] Failed to find which Linux distribution is used"
+get_os_release && get_os_version && echo -e "\\e[32m[SUCCESS] Found ${OS_RELEASE} ${OS_VERSION}\\e[m" || echo -e "\\e[31m[ERROR] Failed to find which Linux distribution is used"
 
 if [ $skip_deps -eq 0 ]; then
   echo "> Installing the necessary packages..."

@@ -124,12 +124,12 @@ if [[ -d $agent360_venv ]];then
   echo
 if [[ $venv_choice == "y" ]];then
   rm -rf $agent360_venv
-  echo -e "\\e[32m [SUCCESS] Python virtual environment $agent360_venv was removed\\e[m"
-  echo -e "\\e[32m [SUCCESS] Removing venv symlinks\\e[m"
+  echo -e "\\e[32m[SUCCESS] Python virtual environment $agent360_venv was removed\\e[m"
+  echo -e "\\e[32m[SUCCESS] Removing venv symlinks\\e[m"
   echo
   remove_symlinks_venv
   sleep 1
-  echo -e "\\e[32m [SUCCESS] /usr/local/bin/hello360 and /usr/local/bin/agent360 removed\\e[m"
+  echo -e "\\e[32m[SUCCESS] /usr/local/bin/hello360 and /usr/local/bin/agent360 removed\\e[m"
 fi
 fi
 echo
