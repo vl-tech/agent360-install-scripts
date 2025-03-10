@@ -182,7 +182,6 @@ error_handling(){
 create_requirements_file() {
     echo "> Creating requirements.txt with hash verification for agent360..."
     cat <<EOF > $requirements_file
-git+https://github.com/plesk/agent360.git
 psutil==6.1.0 \
     --hash=sha256:ff34df86226c0227c52f38b919213157588a678d049688eded74c76c8ba4a5d0 \
     --hash=sha256:c0e0c00aa18ca2d3b2b991643b799a15fc8f0563d2ebb6040f64ce8dc027b942 \
@@ -368,7 +367,7 @@ install_agent360(){
 		logging source $venv_dir/bin/activate && echo -e "\\e[32m[SUCCESS] Virtual environment has been activated\\e[m" || error_handling fatal
 		# Install agent360 in virtual environment
 		logging pip3 install --ignore-installed -r $requirements_file --upgrade && echo -e "\\e[32m[SUCCESS] Finished with agent360\\e[m" || error_handling fatal
-		# logging pip3 install --ignore-installed  git+$agent360_repo_source --upgrade && echo -e "\\e[32m [SUCCESS] Installed Agent360 from source repo $agent360_repo_source" || error_handling fatal
+		logging pip3 install --ignore-installed  git+$agent360_repo_source --upgrade && echo -e "\\e[32m [SUCCESS] Installed Agent360 from source repo $agent360_repo_source" || error_handling fatal
 		## Disabled deactivation of venv because it exists the script
 		## And we need to setup the systemd service regardless if it is using venv or not
 		# logging Deactivate
@@ -380,7 +379,7 @@ install_agent360(){
 		# Install agent360 globally
 		if [[ $(python3 -V | cut -d' ' -f 2 | cut -d'.' -f 2) -ge 11 ]]; then
 			logging pip3 install --ignore-installed --break-system-packages -r $requirements_file --upgrade && echo -e "\\e[32m  [SUCCESS] Finished with agent360\\e[m" || error_handling fatal
-			# logging pip3 install --ignore-installed  git+$agent360_repo_source --break-system-packages && echo -e "\\e[32m [SUCCESS] Installed Agent360 from source repo $agent360_repo_source" || error_handling fatal
+			logging pip3 install --ignore-installed  git+$agent360_repo_source --break-system-packages && echo -e "\\e[32m [SUCCESS] Installed Agent360 from source repo $agent360_repo_source" || error_handling fatal
 		else
 			logging pip3 install --ignore-installed -r $requirements_file --upgrade && echo -e "\\e[32m[SUCCESS] Finished with agent360\\e[m" || error_handling fatal
 		fi

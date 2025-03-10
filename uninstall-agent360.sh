@@ -31,20 +31,20 @@ handle_cmd () {
 }
 
 venv_dir="/opt/agent360-venv"
-remove_symlinks_venv(){
+# remove_symlinks_venv(){
 
-if $venv_dir/bin/agent360 ;then
-  echo -e "Removing /usr/local/bin/agent360"
-  sleep 1
-  unlink /usr/local/bin/agent360
-fi
+# if $venv_dir/bin/agent360 ;then
+#   echo -e "Removing /usr/local/bin/agent360"
+#   sleep 1
+#   unlink /usr/local/bin/agent360
+# fi
 
-if $venv_dir/bin/hello360 ;then
-  echo -e "Removing /usr/local/bin/hello360"
-  sleep 1
-  unlink /usr/local/bin/hello360
-fi
-}
+# if $venv_dir/bin/hello360 ;then
+#   echo -e "Removing /usr/local/bin/hello360"
+#   sleep 1
+#   unlink /usr/local/bin/hello360
+# fi
+# }
 
 get_os_version(){
 
@@ -127,7 +127,7 @@ if [[ $venv_choice == "y" ]];then
   echo -e "\\e[32m[SUCCESS] Python virtual environment $agent360_venv was removed\\e[m"
   echo -e "\\e[32m[SUCCESS] Removing venv symlinks\\e[m"
   echo
-  remove_symlinks_venv
+  # remove_symlinks_venv
   sleep 1
   echo -e "\\e[32m[SUCCESS] /usr/local/bin/hello360 and /usr/local/bin/agent360 removed\\e[m"
 fi
