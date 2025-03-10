@@ -475,7 +475,7 @@ systemD_config(){
 		WantedBy=multi-user.target
 EOF
 	service_check $agent_sysd_service
-	echo -e '\\e[33m[NOTE] Restarting the Agent service\\e[m'
+	echo -e "\\e[33m[NOTE] Restarting the Agent service\\e[m"
 	systemctl restart agent360.service
 }
 
@@ -611,4 +611,4 @@ echo "> Creating the service..."
 system_init
 
 ## Will add the uninstall script reference later
-echo "\\e[32m[SUCCESS] Agent is Configured! Enjoy!\\e[m"
+echo -e "\\e[32m[SUCCESS] Agent is Configured! Enjoy!\\e[m"
