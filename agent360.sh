@@ -394,7 +394,7 @@ prepare_conf(){
 	check_wget
 	echo "> Preparing the agent360 configuration..."
 	if [[ !(-f $agent_config_file) || !($(cat ${agent_config_file} | wc -l) -gt 1) ]]; then
-		logging wget -qO $agent_config_file $config_tpl && echo -e "\\e[32m  [SUCCESS] The default template for agent360 has been installed\\e[m" || error_handling
+		logging wget -qO $agent_config_file $config_tpl && echo -e "\\e[32m[SUCCESS] The default template for agent360 has been installed\\e[m" || error_handling
 	fi
 
 	echo "> Generating a server ID..."

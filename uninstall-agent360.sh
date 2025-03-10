@@ -33,13 +33,13 @@ handle_cmd () {
 venv_dir="/opt/agent360-venv"
 remove_symlinks_venv(){
 
-if $symlink_agent ;then
+if $venv_dir/bin/agent360 ;then
   echo -e "Removing /usr/local/bin/agent360"
   sleep 1
   unlink /usr/local/bin/agent360
 fi
 
-if $symlink_hello ;then
+if $venv_dir/bin/hello360 ;then
   echo -e "Removing /usr/local/bin/hello360"
   sleep 1
   unlink /usr/local/bin/hello360
