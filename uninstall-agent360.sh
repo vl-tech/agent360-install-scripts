@@ -46,9 +46,27 @@ if $symlink_hello ;then
 fi
 }
 
+get_os_version(){
+
+  VERSION=$(cat /etc/os-release | grep -E "^VERSION" | head -1 | cut -d'"' -f2 | cut -d'.' -f1)
+	if [[ -n $VERSION ]];then
+		OS_VERSION=$VERSION
+
+        if [[ $OS_VERSION == '7 (Core)' ]];then
+        OS_VERSION=$(cat /etc/os-release | grep ^VERSION | head -1 | cut -d'"' -f2 | awk '{print $1}')
+        return "$OS_VERSION"
+        fi
+	else
+		OS_VERSION=""
+		echo -e "\\e[31m  [ERROR] Unable to find the Linux distribution version\\e[m"
+		return "$OS_VERSION"
+	fi
+}
+
 check_ubuntu_release(){
-  OS_VERSION=$(cat /etc/os-release  | grep ^VERSION | head -1 | cut -d'"' -f2 | cut -d '.' -f1)
-  if [[ $OS_VERSION > 22 ]];then
+  # OS_VERSION=$(cat /etc/os-release  | grep ^VERSION | head -1 | cut -d'"' -f2 | cut -d '.' -f1)
+  OS_VERSION=get_os_version
+  if [[ $OS_VERSION -gt 22 ]];then
       echo -e "\\e[33m[WARNING] System version is ${OS_VERSION} applying arguments to pip3 --break-system-packages for package removal\\e[m"
       handle_cmd 'systemctl stop agent360' 'The service agent360 has been stopped'
       handle_cmd 'systemctl disable agent360' 'The service agent360 has been disabled'
@@ -73,12 +91,22 @@ if [[ -f /etc/systemd/system/agent360.service ]] || [[ -f /etc/systemd/system/ag
 else
   echo -e "\\e[33m[WARNING] The configuration file of the service agent360 is not found\n\t  Probably, it was removed earlier\\e[m"
 fi
-if [[ -f /etc/agent360.ini ]] || [[ -f /etc/agent360-token.ini ]] ; then
-  handle_cmd 'rm -f /etc/agent360*' 'The 360 Monitoring configuration files have been deleted'
-else
-  echo -e "\\e[33m[WARNING] The 360 Monitoring configuration files are not found\n\t  Probably, they were removed earlier\\e[m"
-fi
 
+# if [[ -f /etc/agent360.ini ]] || [[ -f /etc/agent360-token.ini ]] ; then
+#   handle_cmd 'rm -f /etc/agent360*' "The 360 Monitoring configuration files have been deleted `echo`"
+# else
+#   echo -e "\\e[33m[WARNING] The 360 Monitoring configuration files are not found\n\t  Probably, they were removed earlier\\e[m"
+# fi
+if test -d /usr/local/cpanel/ 2>/dev/null;then
+  echo -e "\\e[34m[NOTE] This is cPanel server. Skipping agent360 ini files removal!\\e[m"
+else
+  echo -e "\\e[34m[NOTE] This is not cPanel server. Removing agent360.ini files!\\e[m"
+  if [[ -f /etc/agent360.ini ]] || [[ -f /etc/agent360-token.ini ]] ; then
+    handle_cmd 'rm -f /etc/agent360*' "The 360 Monitoring configuration files have been deleted `echo`"
+  else
+    echo -e "\\e[33m[WARNING] The 360 Monitoring configuration files are not found\n\t  Probably, they were removed earlier\\e[m"
+  fi
+fi
 if [[ -f /var/log/agent360.log ]] || [[ -f /var/log/agent360-install.log ]]; then
   echo
   read -r -p "Do you want to remove agent360 logs (y/n)? " choice
@@ -90,7 +118,7 @@ if [[ -f /var/log/agent360.log ]] || [[ -f /var/log/agent360-install.log ]]; the
 fi
 
 if [[ -d $agent360_venv ]];then
-  echo -e "\\e[35m[INFO] Python Virtual environment folder  $venv_dir  exists\\e[m "
+  echo -e "\\e[33m[INFO] Python Virtual environment folder  $venv_dir  exists\\e[m "
 
   read -r -p "[Q] Do you want to delete it (y/n)? " venv_choice
   echo
@@ -105,4 +133,4 @@ if [[ $venv_choice == "y" ]];then
 fi
 fi
 echo
-echo -e "\\e[34m[INFO] Please wait for 15 minutes and, then, remove the server from 360 Monitoring > Servers\\e[m"
+echo -e "\\e[33m[INFO] Please wait for 15 minutes and, then, remove the server from 360 Monitoring > Servers\\e[m"

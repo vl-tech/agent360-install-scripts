@@ -3,7 +3,7 @@
 #: Variables :#
 set -o nounset
 export LC_ALL=C
-
+agent360_repo_source="https://github.com/plesk/agent360.git"
 install_log="/var/log/agent360-install.log"
 log_file="/var/log/agent360.log"
 default_bin="/usr/local/bin/agent360"
@@ -110,7 +110,7 @@ done
 
 
 
-# Chekcing the positional arguments. If empty will return the below message instead of 
+# Checking the positional arguments. If empty will return the below message instead of 
 # ./agent360.sh: line 114: positional_args[0]: unbound variable
 
 if [[ ${#positional_args[@]} -eq 0 || -z "${positional_args[0]}" ]]; then
@@ -156,7 +156,7 @@ check_wget(){
 	install_wget=$($installer install -y wget)
 	$install_wget
 	else
-	echo "Wget installed. Continuing instalation"
+	echo -e "\\e[33m[NOTE] Wget already installed. Continuing Agent360 installation\\e[m"
 	fi
 }
 
@@ -173,14 +173,16 @@ error_handling(){
 		fi
 	fi
 }
+## Removing the agent package from here as it is not updated on pypi.org for now.
+## Backing up data of file for agent
+## agent360==$agent360_version \
+##    --hash=sha256:e14e54e98bda3baea204f625056a55788c942cc6e94aa19d1f97f40b864ca5dd \
+##    --hash=sha256:56b7ddfa08c7bb3cf92ec48a7be47126bb387bcebae22e477f225ad02f58de85
 
 create_requirements_file() {
     echo "> Creating requirements.txt with hash verification for agent360..."
     cat <<EOF > $requirements_file
-agent360==$agent360_version \
-    --hash=sha256:e14e54e98bda3baea204f625056a55788c942cc6e94aa19d1f97f40b864ca5dd \
-    --hash=sha256:56b7ddfa08c7bb3cf92ec48a7be47126bb387bcebae22e477f225ad02f58de85
-
+git+https://github.com/plesk/agent360.git
 psutil==6.1.0 \
     --hash=sha256:ff34df86226c0227c52f38b919213157588a678d049688eded74c76c8ba4a5d0 \
     --hash=sha256:c0e0c00aa18ca2d3b2b991643b799a15fc8f0563d2ebb6040f64ce8dc027b942 \
@@ -348,6 +350,8 @@ prepare_pkgs(){
 	fi
 }
 
+
+
 install_agent360(){
 	ins_state=$1
 	if [ ! $ins_state ]; then
@@ -364,7 +368,7 @@ install_agent360(){
 		logging source $venv_dir/bin/activate && echo -e "\\e[32m  [SUCCESS] Virtual environment has been activated\\e[m" || error_handling fatal
 		# Install agent360 in virtual environment
 		logging pip3 install --ignore-installed -r $requirements_file --upgrade && echo -e "\\e[32m  [SUCCESS] Finished with agent360\\e[m" || error_handling fatal
-		
+		# logging pip3 install --ignore-installed  git+$agent360_repo_source --upgrade && echo -e "\\e[32m [SUCCESS] Installed Agent360 from source repo $agent360_repo_source" || error_handling fatal
 		## Disabled deactivation of venv because it exists the script
 		## And we need to setup the systemd service regardless if it is using venv or not
 		# logging Deactivate
@@ -376,6 +380,7 @@ install_agent360(){
 		# Install agent360 globally
 		if [[ $(python3 -V | cut -d' ' -f 2 | cut -d'.' -f 2) -ge 11 ]]; then
 			logging pip3 install --ignore-installed --break-system-packages -r $requirements_file --upgrade && echo -e "\\e[32m  [SUCCESS] Finished with agent360\\e[m" || error_handling fatal
+			# logging pip3 install --ignore-installed  git+$agent360_repo_source --break-system-packages && echo -e "\\e[32m [SUCCESS] Installed Agent360 from source repo $agent360_repo_source" || error_handling fatal
 		else
 			logging pip3 install --ignore-installed -r $requirements_file --upgrade && echo -e "\\e[32m  [SUCCESS] Finished with agent360\\e[m" || error_handling fatal
 		fi
@@ -471,6 +476,8 @@ systemD_config(){
 		WantedBy=multi-user.target
 EOF
 	service_check $agent_sysd_service
+	echo -e '\\e[33m[NOTE] Restarting the Agent service\\e[m'
+	systemctl restart agent360.service
 }
 
 ## Systemd service working with agent360 user and venve. I'v set it for better security.
@@ -496,6 +503,8 @@ systemD_config_venv(){
 		WantedBy=multi-user.target
 EOF
 service_check $agent_sysd_service
+echo -e '\\e[33m[NOTE] Restarting the Agent service\\e[m'
+systemctl restart agent360.service
 }
 
 bsd_config(){
@@ -603,4 +612,4 @@ echo "> Creating the service..."
 system_init
 
 ## Will add the uninstall script reference later
-echo "Agent is Configured! Enjoy!"
+echo "\\e[32m[SUCCESS] Agent is Configured! Enjoy!\\e[m"
