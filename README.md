@@ -1,6 +1,8 @@
-<span style="color:orange">## WARNING</span>
+## WARNING
 
-<span style="color:orange">Due to how cPanel integrates 360 monitoring plugin the script might not always work causing 404 errors. Please rever to below article</span>
+```ruby
+Due to how cPanel integrates 360 monitoring plugin the script might not always work causing 404 errors. Please rever to below article
+```
 
 [360 monitoring plugin error 404 Error](https://support.cpanel.net/hc/en-us/articles/30814926304151-360-monitoring-plugin-error-404-Error-POST-https-api-monitoring360-io-metrics-get-metrics-data-404)
 
