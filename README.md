@@ -1,10 +1,8 @@
-## Agent 360 script for installation of 360 monitoring
-
-> [!note]  
+> [!WARNING]  
 > Due to how cPanel integrates 360 monitoring plugin the script might not always work causing 404 errors. Please rever to below article
 [360 monitoring plugin error 404 Error](https://support.cpanel.net/hc/en-us/articles/30814926304151-360-monitoring-plugin-error-404-Error-POST-https-api-monitoring360-io-metrics-get-metrics-data-404)
 
-
+## Agent 360 script for installation of 360 monitoring
 - Available usage options
 
 ```bash
