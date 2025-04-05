@@ -24,7 +24,7 @@ deb_os_list=( "ubuntu" "debian" )
 free_os_list=( "freebsd" )
 servers_tab_url="https://app.360monitoring.com/servers/overview"
 default_pkgs=( "gcc" )
-deb_py_pkgs=( "python3-dev" "python3-setuptools" "python3-venv" "python3-pip" "python3.12-devel")
+deb_py_pkgs=( "python3-dev" "python3-setuptools" "python3-venv" "python3-pip")
 rhel_py_pkgs=( "which" "python3" "python3-devel" "libevent-devel" )
 
 #: Check root privilege :#
