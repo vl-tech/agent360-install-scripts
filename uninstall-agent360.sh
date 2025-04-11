@@ -98,9 +98,11 @@ fi
 #   echo -e "\\e[33m[WARNING] The 360 Monitoring configuration files are not found\n\t  Probably, they were removed earlier\\e[m"
 # fi
 if test -d /usr/local/cpanel/ 2>/dev/null;then
-  echo -e "\\e[34m[NOTE] This is cPanel server. Skipping agent360 ini files removal!\\e[m"
+  echo -e "\\e[34m[NOTE] This is cPanel server. Skipping removal of /etc/agent360.ini file !\\e[m"
+  echo -e "\\e[34m[NOTE] Removing file /etc/agent360-token.ini and /root/.360monitoring/ folder !\\e[m"
+  handle_cmd 'rm -rf /etc/agent360-token.ini || rm -rf /root/.360monitoring/'
 else
-  echo -e "\\e[34m[NOTE] This is not cPanel server. Removing agent360.ini files!\\e[m"
+  echo -e "\\e[34m[NOTE] This is not cPanel server. Removing all agent360 ini files from /etc folder !\\e[m"
   if [[ -f /etc/agent360.ini ]] || [[ -f /etc/agent360-token.ini ]] ; then
     handle_cmd 'rm -f /etc/agent360*' "The 360 Monitoring configuration files have been deleted `echo`"
   else
