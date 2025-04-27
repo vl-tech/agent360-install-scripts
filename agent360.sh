@@ -367,7 +367,7 @@ install_agent360(){
 		logging source $venv_dir/bin/activate && echo -e "\\e[32m[SUCCESS] Virtual environment has been activated\\e[m" || error_handling fatal
 		# Install agent360 in virtual environment
 		logging pip3 install --ignore-installed -r $requirements_file --upgrade && echo -e "\\e[32m[SUCCESS] Finished with agent360\\e[m" || error_handling fatal
-		logging pip3 install --ignore-installed  agent360 --upgrade && echo -e "\\e[32m [SUCCESS] Installed Agent360 || error_handling fatal
+		logging pip3 install --ignore-installed  agent360 --upgrade && echo -e "\\e[32m [SUCCESS] Installed Agent360\\e[m" || error_handling fatal
 		## Disabled deactivation of venv because it exists the script
 		## And we need to setup the systemd service regardless if it is using venv or not
 		# logging Deactivate
