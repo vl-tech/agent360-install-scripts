@@ -17,7 +17,7 @@ venv_dir="/opt/agent360-venv"
 requirements_file="requirements.txt"
 
 # Version and hash for secure installation
-agent360_version="1.3.1"
+agent360_version="1.3.2"
 
 rhel_os_list=( "centos" "almalinux" "cloudlinux" "amazon" "fedora" "sangoma" "oracle" "scientific" "freepbx" "rhel" "virtuozzo" "rocky" )
 deb_os_list=( "ubuntu" "debian" )
@@ -175,9 +175,9 @@ error_handling(){
 }
 ## Removing the agent package from here as it is not updated on pypi.org for now.
 ## Backing up data of file for agent
-## agent360==$agent360_version \
-##    --hash=sha256:e14e54e98bda3baea204f625056a55788c942cc6e94aa19d1f97f40b864ca5dd \
-##    --hash=sha256:56b7ddfa08c7bb3cf92ec48a7be47126bb387bcebae22e477f225ad02f58de85
+# agent360==$agent360_version \
+#     --hash=sha256:e14e54e98bda3baea204f625056a55788c942cc6e94aa19d1f97f40b864ca5dd \
+#     --hash=sha256:56b7ddfa08c7bb3cf92ec48a7be47126bb387bcebae22e477f225ad02f58de85
 
 create_requirements_file() {
     echo "> Creating requirements.txt with hash verification for agent360..."
@@ -367,7 +367,7 @@ install_agent360(){
 		logging source $venv_dir/bin/activate && echo -e "\\e[32m[SUCCESS] Virtual environment has been activated\\e[m" || error_handling fatal
 		# Install agent360 in virtual environment
 		logging pip3 install --ignore-installed -r $requirements_file --upgrade && echo -e "\\e[32m[SUCCESS] Finished with agent360\\e[m" || error_handling fatal
-		logging pip3 install --ignore-installed  git+$agent360_repo_source --upgrade && echo -e "\\e[32m [SUCCESS] Installed Agent360 from source repo $agent360_repo_source" || error_handling fatal
+		logging pip3 install --ignore-installed  agent360 --upgrade && echo -e "\\e[32m [SUCCESS] Installed Agent360 || error_handling fatal
 		## Disabled deactivation of venv because it exists the script
 		## And we need to setup the systemd service regardless if it is using venv or not
 		# logging Deactivate
@@ -479,7 +479,7 @@ EOF
 	systemctl restart agent360.service
 }
 
-## Systemd service working with agent360 user and venve. I'v set it for better security.
+## Systemd service working with agent360 user and venv. I'v set it for better security.
 ## Needs testing if it will be able to report all metrics . Possible permission denied errors
 
 systemD_config_venv(){
