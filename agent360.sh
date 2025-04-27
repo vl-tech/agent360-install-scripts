@@ -379,7 +379,7 @@ install_agent360(){
 		# Install agent360 globally
 		if [[ $(python3 -V | cut -d' ' -f 2 | cut -d'.' -f 2) -ge 11 ]]; then
 			logging pip3 install --ignore-installed --break-system-packages -r $requirements_file --upgrade && echo -e "\\e[32m  [SUCCESS] Finished with agent360\\e[m" || error_handling fatal
-			logging pip3 install --ignore-installed  git+$agent360_repo_source --break-system-packages && echo -e "\\e[32m [SUCCESS] Installed Agent360 from source repo $agent360_repo_source" || error_handling fatal
+			logging pip3 install --ignore-installed  agent360 --upgrade --break-system-packages && echo -e  "\\e[32m [SUCCESS] Installed Agent360\\e[m" || error_handling fatal
 		else
 			logging pip3 install --ignore-installed -r $requirements_file --upgrade && echo -e "\\e[32m[SUCCESS] Finished with agent360\\e[m" || error_handling fatal
 		fi
