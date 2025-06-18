@@ -19,7 +19,7 @@ Usage: Positional arguments for agents360.sh script.
 
 --skip-deps --skip-dep-install  Skip OS package instalation
 
---user-venv                     Install agent in virtual environment
+--use-venv                     Install agent in virtual environment
 
 --force                         Install even if agent360 is already instaled
 
