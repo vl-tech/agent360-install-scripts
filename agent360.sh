@@ -369,7 +369,7 @@ install_agent360(){
 		echo "> Upgrading agent360..."
 	fi
 	
-  create_requirements_file
+  
 
 	if [ "$use_venv" -eq 1 ]; then
 		# Create and activate virtual environment
@@ -602,6 +602,7 @@ get_os_release && get_os_version && echo -e "\\e[32m[SUCCESS] Found ${OS_RELEASE
 if [ $skip_deps -eq 0 ]; then
   echo "> Installing the necessary packages..."
   get_installer &&
+  create_requirements_file &&
   check_agent360 &&
   check_cagefs_status_and_cofiguration &&
   prepare_pkgs $OS_NAME $OS_VERSION &&
