@@ -239,7 +239,7 @@ create_requirements_file() {
         --hash=sha256:2e0c7ce7cb5d8f8634ca55d2ba7e6ec2689a2fd6537d8dec1296a477a4910057
 EOF
 }
-
+}
 get_os_release(){
 	RELEASE=$(cat /etc/os-release | grep ^NAME | head -1 | cut -d'"' -f2 | cut -d' ' -f1)
 	if [[ -n $RELEASE ]]; then
