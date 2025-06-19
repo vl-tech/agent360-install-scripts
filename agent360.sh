@@ -601,8 +601,8 @@ get_os_release && get_os_version && echo -e "\\e[32m[SUCCESS] Found ${OS_RELEASE
 
 if [ $skip_deps -eq 0 ]; then
   echo "> Installing the necessary packages..."
-  get_installer &&
   create_requirements_file &&
+  get_installer &&
   check_agent360 &&
   check_cagefs_status_and_cofiguration &&
   prepare_pkgs $OS_NAME $OS_VERSION &&
