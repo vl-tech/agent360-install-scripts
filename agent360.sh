@@ -306,9 +306,6 @@ check_cagefs_status_and_cofiguration(){
 	fi
 }
 
-check_cagefs_status_and_cofiguration
-
-
 get_installer(){
 	if [[ "${rhel_os_list[*]}" == *"$OS_NAME"* ]]; then
 		installer="yum"
@@ -606,6 +603,7 @@ if [ $skip_deps -eq 0 ]; then
   echo "> Installing the necessary packages..."
   get_installer &&
   check_agent360 &&
+  check_cagefs_status_and_cofiguration &&
   prepare_pkgs $OS_NAME $OS_VERSION &&
   install $installer $pkg_list &&
   install_agent360 $agent360_installed &&
