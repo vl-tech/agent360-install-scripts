@@ -596,9 +596,9 @@ touch $log_file
 #: MAIN BODY :#
 echo "> Getting the Linux distribution name and version..."
 get_os_release && get_os_version && echo -e "\\e[32m[SUCCESS] Found ${OS_RELEASE} ${OS_VERSION}\\e[m" || echo -e "\\e[31m[ERROR] Failed to find which Linux distribution is used"
-create_requirements_file
 if [ $skip_deps -eq 0 ]; then
   echo "> Installing the necessary packages..."
+  create_requirements_file &&
   get_installer &&
   check_agent360 &&
   check_cagefs_status_and_cofiguration &&
@@ -608,6 +608,9 @@ if [ $skip_deps -eq 0 ]; then
   prepare_conf
 else
   echo "> Skipping package installation as per –skip-dep-install flag."
+  create_requirements_file
+  check_cagefs_status_and_cofiguration &&
+  get_installer &&
   check_agent360 &&
   install_agent360 $agent360_installed &&
   prepare_conf
