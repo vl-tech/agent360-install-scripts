@@ -604,8 +604,8 @@ if [ $skip_deps -eq 0 ]; then
   get_installer &&
   create_requirements_file &&
   check_agent360 &&
-  check_cagefs_status_and_cofiguration &&
   prepare_pkgs $OS_NAME $OS_VERSION &&
+  check_cagefs_status_and_cofiguration &&
   install $installer $pkg_list &&
   install_agent360 $agent360_installed &&
   prepare_conf
