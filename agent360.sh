@@ -14,7 +14,7 @@ agent_sysd_service="/etc/systemd/system/agent360.service"
 agent_sysv_service="/etc/init.d/agent360"
 agent_bsd_service="/etc/rc.d/agent360"
 venv_dir="/opt/agent360-venv"
-requirements_file="requirements.txt"
+requirements_file="/opt/requirements.txt"
 
 # Version and hash for secure installation
 agent360_version="1.3.2"
