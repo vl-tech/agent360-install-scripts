@@ -95,7 +95,7 @@ fi
 if [[ -f /etc/agent360.ini ]] || [[ -f /etc/agent360-token.ini ]] || [[ -d /root/.360monitoring ]] ; then
   handle_cmd 'rm -f /etc/agent360*' "The 360 Monitoring configuration files have been deleted `echo`"
   handle_cmd 'rm -rf /root/.360monitoring' "The /root/.360monitoring folder have been deleted `echo`"
-  handle_cmd '/scripts/initialize_360monitoring' "Initializing cPanel 360 monitoring script /scripts/initialize_360monitoring `echo`"
+  echo -e "\\e[33m[INFO] To install agent360 on cPanel Run the initialization script -> /scripts/initialize_360monitoring\\e[m"
 else
   echo -e "\\e[33m[WARNING] The 360 Monitoring configuration files are not found\n\t  Probably, they were removed earlier\\e[m"
 fi

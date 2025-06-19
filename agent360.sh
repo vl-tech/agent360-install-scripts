@@ -182,8 +182,7 @@ error_handling(){
 create_requirements_file() {
     echo "> Creating requirements.txt with hash verification for agent360..."
     cat <<EOF > $requirements_file
-psutil==7.0.0\
-
+psutil==7.0.0 \
     --hash=sha256:7be9c3eba38beccb6495ea33afd982a44074b78f28c434a1f51cc07fd315c456 \
     --hash=sha256:4cf3d4eb1aa9b348dec30105c55cd9b7d4629285735a102beb4441e38db90553 \
     --hash=sha256:ba3fcef7523064a6c9da440fc4d6bd07da93ac726b5733c29027d7dc95b39d99 \
