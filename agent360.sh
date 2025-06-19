@@ -293,7 +293,7 @@ check_cagefs_status_and_cofiguration(){
 	then 
 	echo -e "\\e[33m[INFO]Cagefs is Enabled\\e[m"
 	echo -e "\\e[33m[INFO]Configuring agent360 for cagefs\\e[m"
-	logging echo "fs.proc_super_gid=$agent360GID" >> /etc/systctl && sysctl -p && echo -e "\\e[32m[SUCCESS]Configuring /etc/sysctl.conf  \\e[m" || error_handling fatal
+	logging echo "fs.proc_super_gid=$agent360GID" >> /etc/sysctl.conf && sysctl -p && echo -e "\\e[32m[SUCCESS]Configuring /etc/sysctl.conf  \\e[m" || error_handling fatal
 
 	echo -e "\\e[33m[INFO]Configuring agent360 exclude file (/etc/cagefs/exclude/systemuserlist) for cagefs\\e[m"
 	logging echo "agent360" >> /etc/cagefs/exclude/systemuserlist && cagefsctl --force-update || error_handling fatal
@@ -604,8 +604,8 @@ if [ $skip_deps -eq 0 ]; then
   get_installer &&
   create_requirements_file &&
   check_agent360 &&
-  prepare_pkgs $OS_NAME $OS_VERSION &&
   check_cagefs_status_and_cofiguration &&
+  prepare_pkgs $OS_NAME $OS_VERSION &&
   install $installer $pkg_list &&
   install_agent360 $agent360_installed &&
   prepare_conf
