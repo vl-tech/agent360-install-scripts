@@ -285,6 +285,30 @@ get_os_version(){
 
 }
 
+
+check_cagefs_status_and_cofiguration(){
+	agent360GID=$(getent group agent360 | cut -d: -f3)
+	STATUS=$(cagefsctl --cagefs-status 2>/dev/null)
+	if [[ $STATUS ]]
+	then 
+	echo -e "\\e[33m[INFO]Cagefs is Enabled\\e[m"
+	echo -e "\\e[33m[INFO]Configuring agent360 for cagefs\\e[m"
+	logging echo "fs.proc_super_gid=$agent360GID" >> /etc/systctl && sysctl -p && echo -e "\\e[32m[SUCCESS]Configuring /etc/sysctl.conf  \\e[m" || error_handling fatal
+
+	echo -e "\\e[33m[INFO]Configuring agent360 exclude file (/etc/cagefs/exclude/systemuserlist) for cagefs\\e[m"
+	logging echo "agent360" >> /etc/cagefs/exclude/systemuserlist && cagefsctl --force-update || error_handling fatal
+
+	logging systemctl restart lve_namespaces && echo -e "\\e[32m[SUCCESS]Configuring agent360 for cagefs\\e[m" || error_handling fatal
+
+	logging systemctl restart agent360.service	&& echo -e "\\e[32m[SUCCESS] Restarted agent360 Service \\e[m" || error_handling fatal
+	else
+	echo -e "\\e[33m[INFO]CageFS is not enabled. No need to configure it for agent360 user\\e[m"
+	fi
+}
+
+check_cagefs_status_and_cofiguration
+
+
 get_installer(){
 	if [[ "${rhel_os_list[*]}" == *"$OS_NAME"* ]]; then
 		installer="yum"
