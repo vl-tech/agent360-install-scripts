@@ -49,7 +49,7 @@ Direct page URL: https://app.360monitoring.com/servers/overview
 - Installation under Cloudlinux using the initialization script /scripts/initialize_360monitoring
 
 
-![Cloudlinux Installation](Installation-Cloudlinux-cPanel-initialization.png)
+![Cloudlinux Installation](/screenshots/Installation-Cloudlinux-cPanel-initialization.png)
 
 
 
