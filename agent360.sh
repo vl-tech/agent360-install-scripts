@@ -297,8 +297,6 @@ check_cagefs_status_and_cofiguration(){
 	logging echo -e "agent360" >> /etc/cagefs/exclude/systemuserlist && cagefsctl --force-update || error_handling fatal
 
 	logging systemctl restart lve_namespaces && echo -e "\\e[32m[SUCCESS]Configuring agent360 for cagefs\\e[m" || error_handling fatal
-
-	logging systemctl restart agent360.service	&& echo -e "\\e[32m[SUCCESS] Restarted agent360 Service \\e[m" || error_handling fatal
 	else
 	echo -e "\\e[33m[INFO]CageFS is not enabled. No need to configure it for agent360 user\\e[m"
 	fi
