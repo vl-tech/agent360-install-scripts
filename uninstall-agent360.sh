@@ -83,7 +83,9 @@ check_ubuntu_release(){
 ## Added this function to check for the ubuntu version. Ubunu23+ requites --break-system-packages argument to install modules
 ## Alternatively can be done via apt-get install python-agent360 but it is not yet added to any ubuntu repos
 check_ubuntu_release
-
+echo -e "\\e[33m[INFO] Unregistering plugin from WHM interface\\e[m"
+echo
+handle_cmd 'sh /var/cpanel/plugins/monitoring/uninstall.sh'
 
 if [[ -f /etc/systemd/system/agent360.service ]] || [[ -f /etc/systemd/system/agent360 ]] ; then
   handle_cmd 'rm -f /etc/systemd/system/agent360*' 'The configuration of the service agent360 has been removed'
@@ -137,8 +139,5 @@ if [[ $venv_choice == "y" ]];then
 fi
 fi
 
-echo -e "\\e[33m[INFO] Unregistering plugin from WHM interface\\e[m"
-echo
-handle_cmd 'sh /var/cpanel/plugins/monitoring/uninstall.sh'
 echo
 echo -e "\\e[33m[INFO] Please wait for 15 minutes and, then, remove the server from 360 Monitoring > Servers\\e[m"
