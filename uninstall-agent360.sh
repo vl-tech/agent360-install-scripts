@@ -136,5 +136,9 @@ if [[ $venv_choice == "y" ]];then
   echo -e "\\e[32m[SUCCESS] /usr/local/bin/hello360 and /usr/local/bin/agent360 removed\\e[m"
 fi
 fi
+
+echo -e "\\e[33m[INFO] Unregistering plugin from WHM interface\\e[m"
+echo
+handle_cmd 'sh /var/cpanel/plugins/monitoring/uninstall.sh'
 echo
 echo -e "\\e[33m[INFO] Please wait for 15 minutes and, then, remove the server from 360 Monitoring > Servers\\e[m"
