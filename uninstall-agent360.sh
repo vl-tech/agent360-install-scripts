@@ -85,7 +85,7 @@ check_ubuntu_release(){
 check_ubuntu_release
 echo -e "\\e[33m[INFO] Unregistering plugin from WHM interface\\e[m"
 echo
-handle_cmd 'sh /var/cpanel/plugins/monitoring/uninstall.sh'
+handle_cmd whmapi1 EcosystemFeatures/local_disable plugin=cpanel-monitoring-plugin
 
 if [[ -f /etc/systemd/system/agent360.service ]] || [[ -f /etc/systemd/system/agent360 ]] ; then
   handle_cmd 'rm -f /etc/systemd/system/agent360*' 'The configuration of the service agent360 has been removed'
