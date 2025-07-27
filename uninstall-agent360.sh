@@ -124,8 +124,11 @@ if [[ -f /var/log/agent360.log ]] || [[ -f /var/log/agent360-install.log ]]; the
 fi
 
 if [[ -d $agent360_venv ]];then
+  echo -e "\\e[33m[INFO]Removing agent360 and hello360 symlinks\\e[m"
+  handle_cmd unlink /usr/local/bin/agent360
+  handle_cmd unlink /usr/local/bin/hello360
+  echo
   echo -e "\\e[33m[INFO] Python Virtual environment folder  $venv_dir  exists\\e[m "
-
   read -r -p "[Q] Do you want to delete it (y/n)? " venv_choice
   echo
 if [[ $venv_choice == "y" ]];then
