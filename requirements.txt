@@ -1,0 +1,5 @@
+# Install the newest compatible agent360 release and its dependencies.
+# The installer uses --upgrade --upgrade-strategy eager on this requirement set.
+agent360
+# Python 3.6 is shipped by AlmaLinux/RHEL 8. psutil 7 no longer supports it.
+psutil<7; python_version < "3.7"

@@ -2,7 +2,8 @@
 
 #: Variables :#
 set -o nounset
-export LC_ALL=C
+# Some Python package build scripts read UTF-8 metadata.  `C` is ASCII-only.
+export LC_ALL=C.UTF-8
 # agent360_repo_source="https://github.com/plesk/agent360.git"
 install_log="/var/log/agent360-install.log"
 log_file="/var/log/agent360.log"
@@ -14,10 +15,9 @@ agent_sysd_service="/etc/systemd/system/agent360.service"
 agent_sysv_service="/etc/init.d/agent360"
 agent_bsd_service="/etc/rc.d/agent360"
 venv_dir="/opt/agent360-venv"
-requirements_file="/opt/requirements.txt"
-
-# Version and hash for secure installation
-agent360_version="1.3.2"
+requirements_file="/opt/agent360-requirements.txt"
+script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+bundled_requirements_file="$script_dir/requirements.txt"
 
 rhel_os_list=( "centos" "almalinux" "cloudlinux" "amazon" "fedora" "sangoma" "oracle" "scientific" "freepbx" "rhel" "virtuozzo" "rocky" )
 deb_os_list=( "ubuntu" "debian" )
@@ -37,20 +37,16 @@ fi
 
 usage() {
 cat << EOF
-Usage: Positional arguments for agents360.sh script. 
+Usage: ./agent360.sh [OPTIONS] <token> [tags]
 
-./agent360.sh [--args| ARG..] [--args| ARG..] 
-
---help|--h 			Displays this information 
-
---skip-deps --skip-dep-install  Skip OS package instalation  				 
-
---user-venv 			Install agent in virtual environment 		 
-
---force 			Install even if agent360 is already instaled 
-
---token <token value> 		360 Monitoring account User ID:
-
+Options:
+  --help, --h, -h                 Display this information
+  --skip-deps, --skip-dep-install Skip OS package installation
+  --use-venv                      Install the agent in a virtual environment
+  --force                         Install even if agent360 is already installed
+  --token <token>                 360 Monitoring account user ID
+  --tags <tags>                   Comma-separated tags for the server
+  --add-websites                  Enable website auto-monitoring
 
 EOF
 
@@ -82,14 +78,22 @@ while [[ $# -gt 0 ]]; do
       shift
       ;;
     --token)
+      if [[ $# -lt 2 || -z "$2" ]]; then
+        echo -e "\\e[31m[ERROR] --token requires a value.\\e[m"
+        usage
+        exit 2
+      fi
       token="$2"
-      shift
-      shift
+      shift 2
       ;;
     --tags)
+      if [[ $# -lt 2 || -z "$2" ]]; then
+        echo -e "\\e[31m[ERROR] --tags requires a value.\\e[m"
+        usage
+        exit 2
+      fi
       tags="$2"
-      shift
-      shift
+      shift 2
       ;;
     # As I read it the older code just accept add-websites as an argument
 	# This does not work. The function seems to be missing. probably because it is being added from the website directly
@@ -97,10 +101,20 @@ while [[ $# -gt 0 ]]; do
       automon=1
       shift
       ;;
-	--help|--h)
+	--help|--h|-h)
 	  usage
-	  exit 1
+	  exit 0
 	;;
+    --)
+      shift
+      positional_args+=("$@")
+      break
+      ;;
+    -*)
+      echo -e "\\e[31m[ERROR] Unknown option: $1\\e[m"
+      usage
+      exit 2
+      ;;
     *)
       positional_args+=("$1")
       shift;
@@ -110,10 +124,23 @@ done
 
 
 
-# Checking the positional arguments. If empty will return the below message instead of 
-# ./agent360.sh: line 114: positional_args[0]: unbound variable
+# Accept both positional and named token/tag syntax.
+positional_index=0
+if [[ -z "$token" && ${#positional_args[@]} -gt 0 ]]; then
+    token="${positional_args[0]}"
+    positional_index=1
+fi
+if [[ -z "$tags" && ${#positional_args[@]} -gt "$positional_index" ]]; then
+    tags="${positional_args[$positional_index]}"
+    ((positional_index++))
+fi
+if [[ ${#positional_args[@]} -gt "$positional_index" ]]; then
+    echo -e "\\e[31m[ERROR] Too many positional arguments.\\e[m"
+    usage
+    exit 2
+fi
 
-if [[ ${#positional_args[@]} -eq 0 || -z "${positional_args[0]}" ]]; then
+if [[ -z "$token" ]]; then
     echo -e "\\e[31m[WARNING] Please provide User ID or Token to register your server\\e[m"
 	echo
 	echo -e "\\e[31m[WARNING] You can check it at 360monitoring.com -> Servers -> Add server\\e[m"
@@ -122,9 +149,7 @@ if [[ ${#positional_args[@]} -eq 0 || -z "${positional_args[0]}" ]]; then
 	usage
     exit 1
 fi
-# Accept positional syntax too
-token=${token:=${positional_args[0]}}
-tags=${tags:=${positional_args[1]:-}}
+
 # Checking for valid token. From what I see so far token is 24 characters in length 
 if [[ ${#token} -lt 24 ]];then
 	echo -e "\\e[31m[CRITICAL] Invalid Token. Please enter valid User ID\\e[m"
@@ -151,12 +176,11 @@ logging(){
 check_wget(){
 	get_installer
 	if ! command -v wget &> /dev/null;then
-	echo -e "\\e[31m[CRITICAL] Wget command not found\\e[m"
-	echo -e "Installing wget"
-	install_wget=$($installer install -y wget)
-	$install_wget
+		echo -e "\\e[31m[CRITICAL] Wget command not found\\e[m"
+		echo -e "Installing wget"
+		install "$installer" wget
 	else
-	echo -e "\\e[33m[NOTE] Wget already installed. Continuing Agent360 installation\\e[m"
+		echo -e "\\e[33m[NOTE] Wget already installed. Continuing Agent360 installation\\e[m"
 	fi
 }
 
@@ -176,111 +200,45 @@ error_handling(){
 
 
 create_requirements_file() {
-    echo "> Creating requirements.txt with hash verification for agent360..."
-    cat <<EOF > $requirements_file
-
-    agent360==1.3.4 \
-        --hash=sha256:1461d2454c09e348a39616869f8b7e6162ae75dc1eacb92edd1934e09a1e9824 \
-        --hash=sha256:00d9586b0436817a626cd4039e2a6711ec09ec5c8a9efd4adefa536a4e081207
-    psutil==7.0.0 \
-        --hash=sha256:7be9c3eba38beccb6495ea33afd982a44074b78f28c434a1f51cc07fd315c456 \
-        --hash=sha256:4cf3d4eb1aa9b348dec30105c55cd9b7d4629285735a102beb4441e38db90553 \
-        --hash=sha256:ba3fcef7523064a6c9da440fc4d6bd07da93ac726b5733c29027d7dc95b39d99 \
-        --hash=sha256:1e744154a6580bc968a0195fd25e80432d3afec619daf145b9e5ba16cc1d688e \
-        --hash=sha256:84df4eb63e16849689f76b1ffcb36db7b8de703d1bc1fe41773db487621b6c17 \
-        --hash=sha256:a5f098451abc2828f7dc6b58d44b532b22f2088f4999a937557b603ce72b1993 \
-        --hash=sha256:4b1388a4f6875d7e2aff5c4ca1cc16c545ed41dd8bb596cefea80111db353a34 \
-        --hash=sha256:1fcee592b4c6f146991ca55919ea3d1f8926497a713ed7faaf8225e174581e91 \
-        --hash=sha256:39db632f6bb862eeccf56660871433e111b6ea58f2caea825571951d4b6aa3da \
-        --hash=sha256:101d71dc322e3cffd7cea0650b09b3d08b8e7c4109dd6809fe452dfd00e58b25
-    netifaces==0.11.0 \
-        --hash=sha256:eb4813b77d5df99903af4757ce980a98c4d702bbcb81f32a0b305a1537bdf0b1 \
-        --hash=sha256:5f9ca13babe4d845e400921973f6165a4c2f9f3379c7abfc7478160e25d196a4 \
-        --hash=sha256:08e3f102a59f9eaef70948340aeb6c89bd09734e0dca0f3b82720305729f63ea \
-        --hash=sha256:c03fb2d4ef4e393f2e6ffc6376410a22a3544f164b336b3a355226653e5efd89 \
-        --hash=sha256:7dbb71ea26d304e78ccccf6faccef71bb27ea35e259fb883cfd7fd7b4f17ecb1 \
-        --hash=sha256:0f6133ac02521270d9f7c490f0c8c60638ff4aec8338efeff10a1b51506abe85 \
-        --hash=sha256:73ff21559675150d31deea8f1f8d7e9a9a7e4688732a94d71327082f517fc6b4 \
-        --hash=sha256:815eafdf8b8f2e61370afc6add6194bd5a7252ae44c667e96c4c1ecf418811e4 \
-        --hash=sha256:50721858c935a76b83dd0dd1ab472cad0a3ef540a1408057624604002fcfb45b \
-        --hash=sha256:c9a3a47cd3aaeb71e93e681d9816c56406ed755b9442e981b07e3618fb71d2ac \
-        --hash=sha256:aab1dbfdc55086c789f0eb37affccf47b895b98d490738b81f3b2360100426be \
-        --hash=sha256:c37a1ca83825bc6f54dddf5277e9c65dec2f1b4d0ba44b8fd42bc30c91aa6ea1 \
-        --hash=sha256:28f4bf3a1361ab3ed93c5ef360c8b7d4a4ae060176a3529e72e5e4ffc4afd8b0 \
-        --hash=sha256:2650beee182fed66617e18474b943e72e52f10a24dc8cac1db36c41ee9c041b7 \
-        --hash=sha256:cb925e1ca024d6f9b4f9b01d83215fd00fe69d095d0255ff3f64bffda74025c8 \
-        --hash=sha256:84e4d2e6973eccc52778735befc01638498781ce0e39aa2044ccfd2385c03246 \
-        --hash=sha256:18917fbbdcb2d4f897153c5ddbb56b31fa6dd7c3fa9608b7e3c3a663df8206b5 \
-        --hash=sha256:48324183af7f1bc44f5f197f3dad54a809ad1ef0c78baee2c88f16a5de02c4c9 \
-        --hash=sha256:8f7da24eab0d4184715d96208b38d373fd15c37b0dafb74756c638bd619ba150 \
-        --hash=sha256:2479bb4bb50968089a7c045f24d120f37026d7e802ec134c4490eae994c729b5 \
-        --hash=sha256:3ecb3f37c31d5d51d2a4d935cfa81c9bc956687c6f5237021b36d6fdc2815b2c \
-        --hash=sha256:96c0fe9696398253f93482c84814f0e7290eee0bfec11563bd07d80d701280c3 \
-        --hash=sha256:c92ff9ac7c2282009fe0dcb67ee3cd17978cffbe0c8f4b471c00fe4325c9b4d4 \
-        --hash=sha256:d07b01c51b0b6ceb0f09fc48ec58debd99d2c8430b09e56651addeaf5de48048 \
-        --hash=sha256:469fc61034f3daf095e02f9f1bbac07927b826c76b745207287bc594884cfd05 \
-        --hash=sha256:5be83986100ed1fdfa78f11ccff9e4757297735ac17391b95e17e74335c2047d \
-        --hash=sha256:54ff6624eb95b8a07e79aa8817288659af174e954cca24cdb0daeeddfc03c4ff \
-        --hash=sha256:841aa21110a20dc1621e3dd9f922c64ca64dd1eb213c47267a2c324d823f6c8f \
-        --hash=sha256:e76c7f351e0444721e85f975ae92718e21c1f361bda946d60a214061de1f00a1 \
-        --hash=sha256:043a79146eb2907edf439899f262b3dfe41717d34124298ed281139a8b93ca32
-    configparser==7.2.0 \
-        --hash=sha256:e8b39238fb6f0153a069aa253d349467c3c4737934f253ef6abac5fe0eca1e5d \
-        --hash=sha256:fee5e1f3db4156dcd0ed95bc4edfa3580475537711f67a819c966b389d09ce62
-    future==1.0.0 \
-        --hash=sha256:929292d34f5872e70396626ef385ec22355a1fae8ad29e1a734c3e43f9fbc216 \
-        --hash=sha256:bd2968309307861edae1458a4f8a4f3598c03be43b97521076aebf5d94c07b05
-    distro==1.9.0 \
-        --hash=sha256:7bffd925d65168f85027d8da9af6bddab658135b840670a223589bc0c8ef02b2 \
-        --hash=sha256:2fa77c6fd8940f116ee1d6b94a2f90b13b5ea8d019b98bc8bafdcabcdd9bdbed
-    certifi==2025.6.15 \
-        --hash=sha256:d747aa5a8b9bbbb1bb8c22bb13e22bd1f18e9796defa16bab421f7f7a317323b \
-        --hash=sha256:2e0c7ce7cb5d8f8634ca55d2ba7e6ec2689a2fd6537d8dec1296a477a4910057
-EOF
+    # Let pip resolve the newest mutually compatible release set on every run.
+    if [ -r "$bundled_requirements_file" ]; then
+        cp "$bundled_requirements_file" "$requirements_file"
+        return
+    fi
+    # Keep the installer usable when it has been downloaded without the repo.
+    cat > "$requirements_file" <<'CURRENT_REQUIREMENTS'
+# Keep agent360 and all compatible transitive dependencies current.
+agent360
+# Python 3.6 is shipped by AlmaLinux/RHEL 8.  psutil 7 no longer supports it.
+psutil<7; python_version < "3.7"
+CURRENT_REQUIREMENTS
 }
 get_os_release(){
-	RELEASE=$(cat /etc/os-release | grep ^NAME | head -1 | cut -d'"' -f2 | cut -d' ' -f1)
-	if [[ -n $RELEASE ]]; then
-		OS_RELEASE=$RELEASE
-		OS_NAME=$(echo "$OS_RELEASE" | tr '[:upper:]' '[:lower:]')
-	else
-		OS_RELEASE=""
-		echo -e "\\e[31m  [ERROR] Unable to find the Linux distribution name\\e[m"
+	if [[ ! -r /etc/os-release ]]; then
+		echo -e "\\e[31m  [ERROR] Unable to read /etc/os-release\\e[m"
 		exit 1
 	fi
 
-	if [ $OS_RELEASE == "Red" ]; then
-		OS_RELEASE="RHEL"
-		OS_NAME=$(echo "$OS_RELEASE" | tr '[:upper:]' '[:lower:]')
+	# os-release provides machine-readable ID and VERSION_ID values.
+	. /etc/os-release
+	OS_RELEASE="${NAME:-}"
+	OS_NAME="${ID:-}"
+	if [[ -z "$OS_RELEASE" || -z "$OS_NAME" ]]; then
+		echo -e "\\e[31m  [ERROR] Unable to determine the Linux distribution name\\e[m"
+		exit 1
 	fi
 }
 
 ## Changed the behaviour ofthis check due to issue with Cento 7 that has (core) in its name 
 ## Reported error: (Core): syntax error in expression (error token is "(Core)")
 get_os_version(){
-	# VERSION=$(cat /etc/os-release | grep ^VERSION | head -1 | cut -d'"' -f2 | cut -d'.' -f1)
-	# if [[ -n $VERSION ]];then
-	# 	OS_VERSION=$VERSION
-	# else
-	# 	OS_VERSION=""
-	# 	echo -e "\\e[31m  [ERROR] Unable to find the Linux distribution version\\e[m"
-	# 	exit 1
-	# fi
-	
-	VERSION=$(cat /etc/os-release | grep -E "^VERSION" | head -1 | cut -d'"' -f2 | cut -d'.' -f1)
-	if [[ -n $VERSION ]];then
-		OS_VERSION=$VERSION
-
-        if [[ $OS_VERSION == '7 (Core)' ]];then
-        OS_VERSION=$(cat /etc/os-release | grep ^VERSION | head -1 | cut -d'"' -f2 | awk '{print $1}')
-        fi
-	else
-		OS_VERSION=""
-		echo -e "\\e[31m  [ERROR] Unable to find the Linux distribution version\\e[m"
+	VERSION="${VERSION_ID:-${VERSION:-}}"
+	OS_VERSION="${VERSION%%.*}"
+	OS_VERSION="${OS_VERSION%% *}"
+	if [[ ! "$OS_VERSION" =~ ^[0-9]+$ ]]; then
+		echo -e "\\e[31m  [ERROR] Unable to determine a numeric distribution version\\e[m"
 		exit 1
 	fi
-
-
 }
 
 
@@ -303,15 +261,22 @@ check_cagefs_status_and_cofiguration(){
 }
 
 get_installer(){
-	if [[ "${rhel_os_list[*]}" == *"$OS_NAME"* ]]; then
-		installer="yum"
-	elif [[ "${deb_os_list[*]}" == *"$OS_NAME"* ]]; then
-		installer="apt-get"
-		logging apt-get update
-	elif [[ "${free_os_list[*]}" == *"$OS_NAME"* ]]; then
-		installer="pkg"
-	fi
-	error_handling
+	case "$OS_NAME" in
+		centos|almalinux|cloudlinux|amazon|fedora|sangoma|oracle|scientific|freepbx|rhel|virtuozzo|rocky)
+			installer="yum"
+			;;
+		ubuntu|debian)
+			installer="apt-get"
+			logging apt-get update || error_handling fatal
+			;;
+		freebsd)
+			installer="pkg"
+			;;
+		*)
+			echo -e "\\e[31m  [ERROR] Unsupported operating system: ${OS_NAME}\\e[m"
+			exit 1
+			;;
+	esac
 }
 
 check_agent360(){
@@ -339,19 +304,20 @@ get_agent_path(){
 
 install(){
 	pkg_mng=$1
-	program=${@:2}
-	logging $pkg_mng install -y $program && echo -e "\\e[32m[SUCCESS] All the necessary packages were installed\\e[m" || error_handling fatal
+	shift
+	logging "$pkg_mng" install -y "$@" && echo -e "\\e[32m[SUCCESS] All the necessary packages were installed\\e[m" || error_handling fatal
 }
 
 prepare_pkgs(){
 	os_n=$1
 	os_v=$2
 	if [[ ($os_n == "debian" && $os_v -ge 10) || ($os_n == "ubuntu"  && $os_v -ge 18) ]]; then
-		pkg_list="${default_pkgs[*]} ${deb_py_pkgs[*]}"
-	elif [[ $os_n =~ ^(centos|almalinux|cloudlinux|rhel|virtuozzo|rocky|fedora)$ && $os_v -ge 7 ]]; then
-		pkg_list="${default_pkgs[*]} ${rhel_py_pkgs[*]}"
+		pkg_list=( "${default_pkgs[@]}" "${deb_py_pkgs[@]}" )
+	elif [[ "${rhel_os_list[*]}" == *"$os_n"* && $os_v -ge 7 ]]; then
+		pkg_list=( "${default_pkgs[@]}" "${rhel_py_pkgs[@]}" )
 	else
 		echo -e "\\e[31m  [ERROR] Could not prepare the list of packages for installation\\e[m"
+		exit 1
 	fi
 }
 
@@ -359,7 +325,7 @@ prepare_pkgs(){
 
 install_agent360(){
 	ins_state=$1
-	if [ ! $ins_state ]; then
+	if [ "$ins_state" = "false" ]; then
 		echo "> Installing agent360..."
 	else
 		echo "> Upgrading agent360..."
@@ -368,27 +334,37 @@ install_agent360(){
   
 
 	if [ "$use_venv" -eq 1 ]; then
-		# Create and activate virtual environment
-		logging python3 -m venv $venv_dir && echo -e "\\e[32m[SUCCESS] Virtual environment has been created\\e[m" || error_handling fatal
-		logging source $venv_dir/bin/activate && echo -e "\\e[32m[SUCCESS] Virtual environment has been activated\\e[m" || error_handling fatal
-		# Install agent360 in virtual environment
-		logging pip3 install --ignore-installed -r $requirements_file --upgrade && echo -e "\\e[32m[SUCCESS] Finished with agent360\\e[m" || error_handling fatal
-		logging pip3 install --ignore-installed  agent360 --upgrade && echo -e "\\e[32m [SUCCESS] Installed Agent360\\e[m" || error_handling fatal
+		# Activating a venv inside logging would affect only its child process.
+		if [ ! -x "$venv_dir/bin/python" ]; then
+			logging python3 -m venv "$venv_dir" && echo -e "\\e[32m[SUCCESS] Virtual environment has been created\\e[m" || error_handling fatal
+		fi
+		# EL8 ships Python 3.6 and pip 9.  Upgrade to the newest pip that still
+		# supports it before resolving modern package metadata.
+		if "$venv_dir/bin/python" -c 'import sys; raise SystemExit(not (sys.version_info < (3, 7)))'; then
+			logging "$venv_dir/bin/python" -m pip install --upgrade 'pip<22' || error_handling fatal
+		else
+			logging "$venv_dir/bin/python" -m pip install --upgrade pip || error_handling fatal
+		fi
+		logging "$venv_dir/bin/python" -m pip install --upgrade --upgrade-strategy eager -r "$requirements_file" && echo -e "\\e[32m[SUCCESS] Finished with agent360\\e[m" || error_handling fatal
 		## Disabled deactivation of venv because it exists the script
 		## And we need to setup the systemd service regardless if it is using venv or not
 		# logging Deactivate
 		echo "Creating Symlinks $venv_dir/bin/agent360 /usr/local/bin/agent360"
 		# Create a symlink for global access
-		logging ln -sf $venv_dir/bin/agent360 /usr/local/bin/agent360
-		logging ln -sf $venv_dir/bin/hello360 /usr/local/bin/hello360
+		logging ln -sf "$venv_dir/bin/agent360" /usr/local/bin/agent360
+		logging ln -sf "$venv_dir/bin/hello360" /usr/local/bin/hello360
 	else
-		# Install agent360 globally
-		if [[ $(python3 -V | cut -d' ' -f 2 | cut -d'.' -f 2) -ge 11 ]]; then
-			logging pip3 install --ignore-installed --break-system-packages -r $requirements_file --upgrade && echo -e "\\e[32m  [SUCCESS] Finished with agent360\\e[m" || error_handling fatal
-			logging pip3 install --ignore-installed  agent360 --upgrade --break-system-packages && echo -e  "\\e[32m [SUCCESS] Installed Agent360\\e[m" || error_handling fatal
+		if python3 -c 'import sys; raise SystemExit(not (sys.version_info < (3, 7)))'; then
+			logging python3 -m pip install --upgrade 'pip<22' || error_handling fatal
 		else
-			logging pip3 install --ignore-installed -r $requirements_file --upgrade && echo -e "\\e[32m[SUCCESS] Finished with agent360\\e[m" || error_handling fatal
+			logging python3 -m pip install --upgrade pip || error_handling fatal
 		fi
+		pip_args=(install --upgrade --upgrade-strategy eager -r "$requirements_file")
+		# PEP 668 is signalled by this marker; it is not tied to an Ubuntu release.
+		if python3 -c 'import os, sysconfig; raise SystemExit(not os.path.exists(os.path.join(sysconfig.get_path("stdlib"), "EXTERNALLY-MANAGED")))'; then
+			pip_args+=(--break-system-packages)
+		fi
+		logging python3 -m pip "${pip_args[@]}" && echo -e "\\e[32m[SUCCESS] Finished with agent360\\e[m" || error_handling fatal
 	fi
 	echo -e "\\e[32m[SUCCESS] agent360 installed\\e[m"
 }
@@ -455,7 +431,7 @@ service_check(){
 			logging chkconfig agent360 on &&
 			logging service agent360 start &&
 			echo -e "\\e[32m  [SUCCESS] The service has been configured\\e[m"
-		elif [ ]; then
+		elif [ "$srv_type" == "$agent_bsd_service" ]; then
 			logging chmod +x $agent_bsd_service &&
 			logging echo $'\n'"agent360_enable=\"YES\"" >> /etc/rc.conf &&
 			logging service agent360 start &&
@@ -492,8 +468,14 @@ systemD_config_venv(){
 	venv_command_path='/opt/agent360-venv/bin/agent360'
 	create_user
 	echo "Setting up user agent360 permissions"
-	chown -R agent360:agent360 $venv_command_path
-	chown -R agent360:agent360 $venv_dir
+	# Only adjust the actual executable entrypoints. A recursive chown on the full
+	# venv can break packages or libraries installed in the same environment.
+	for executable in "$venv_command_path" "$venv_dir/bin/hello360"; do
+		if [ -e "$executable" ]; then
+			chown agent360:agent360 "$executable"
+			chmod 755 "$executable"
+		fi
+	done
 	cat <<EOF >$agent_sysd_service
 		[Unit]
 		Description=agent360

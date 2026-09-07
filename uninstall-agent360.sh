@@ -1,143 +1,120 @@
-#!/bin/bash
-### Copyright 1999-2023. Plesk International GmbH.
+#!/usr/bin/env bash
+# Uninstall agent360 without removing unrelated Python packages or user files.
 
-###############################################################################
-# The script uninstalls the 360 Monitoring agent and remove all the configuration
-# Requirements : bash 3.x
-# Version      : 2.0
-#########
-
-handle_cmd () {
-  noservicestop="Unit agent360.service not loaded"
-  noservicedisable="Unit file agent360.service does not exist"
-  nomodule="Cannot uninstall requirement agent360, not installed"
-  nouser="user 'agent360' does not exist"
-  agent360_venv='/opt/agent360-venv'
-  if result=$($1 2>&1) ; then
-    echo -e "\\e[32m[SUCCESS] $2\\e[m"
-  else
-    if [[ $result = *$noservicestop* ]] ; then
-      echo -e "\\e[33m[WARNING] Unable to stop the service agent360 because it was not found\n\t  Probably, it was removed earlier\\e[m"
-    elif [[ $result = *$noservicedisable* ]] ; then
-      echo -e "\\e[33m[WARNING] The service agent360 can not be disabled because it was not found\n\t  Probably, it was removed earlier\\e[m"
-    elif [[ $result = *$nomodule* ]] ; then
-      echo -e "\\e[33m[WARNING] The Python modules for 360 Monitoring are not found\n\t  Probably, it was removed earlier\\e[m"
-    elif [[ $result = *$nouser* ]] ; then
-      echo -e "\\e[33m[WARNING] The user agent360 does not exist\n\t  Probably, it was removed earlier\\e[m"
-    else
-      echo -e "\\e[31m[ERROR] $result\\e[m"
-    fi
-  fi
-}
+set -o nounset
 
 venv_dir="/opt/agent360-venv"
-# remove_symlinks_venv(){
+service_file="/etc/systemd/system/agent360.service"
+requirements_file="/opt/agent360-requirements.txt"
 
-# if $venv_dir/bin/agent360 ;then
-#   echo -e "Removing /usr/local/bin/agent360"
-#   sleep 1
-#   unlink /usr/local/bin/agent360
-# fi
+if [ "$(id -u)" -ne 0 ]; then
+  echo "[ERROR] Uninstall must be run as root."
+  exit 1
+fi
 
-# if $venv_dir/bin/hello360 ;then
-#   echo -e "Removing /usr/local/bin/hello360"
-#   sleep 1
-#   unlink /usr/local/bin/hello360
-# fi
-# }
-
-get_os_version(){
-
-  VERSION=$(cat /etc/os-release | grep -E "^VERSION" | head -1 | cut -d'"' -f2 | cut -d'.' -f1)
-	if [[ -n $VERSION ]];then
-		OS_VERSION=$VERSION
-
-        if [[ $OS_VERSION == '7 (Core)' ]];then
-        OS_VERSION=$(cat /etc/os-release | grep ^VERSION | head -1 | cut -d'"' -f2 | awk '{print $1}')
-        return "$OS_VERSION"
-        fi
-	else
-		OS_VERSION=""
-		echo -e "\\e[31m  [ERROR] Unable to find the Linux distribution version\\e[m"
-		return "$OS_VERSION"
-	fi
-}
-
-check_ubuntu_release(){
-  # OS_VERSION=$(cat /etc/os-release  | grep ^VERSION | head -1 | cut -d'"' -f2 | cut -d '.' -f1)
-  OS_VERSION=get_os_version
-  if [[ $OS_VERSION -gt 22 ]];then
-      echo -e "\\e[33m[WARNING] System version is ${OS_VERSION} applying arguments to pip3 --break-system-packages for package removal\\e[m"
-      handle_cmd 'systemctl stop agent360' 'The service agent360 has been stopped'
-      handle_cmd 'systemctl disable agent360' 'The service agent360 has been disabled'
-      handle_cmd 'pip3 uninstall -y --break-system-packages agent360' 'The Python modules for 360 Monitoring have been removed'
-      handle_cmd 'userdel agent360' 'The user agent360 has been deleted'
-
+run() {
+  local description="$1"
+  shift
+  if "$@"; then
+    echo "[SUCCESS] $description"
   else
-      handle_cmd 'systemctl stop agent360' 'The service agent360 has been stopped'
-      handle_cmd 'systemctl disable agent360' 'The service agent360 has been disabled'
-      handle_cmd 'pip3 uninstall -y  agent360' 'The Python modules for 360 Monitoring have been removed'
-      handle_cmd 'userdel agent360' 'The user agent360 has been deleted'
+    echo "[WARNING] $description could not be completed."
   fi
 }
-## Added this function to check for the ubuntu version. Ubunu23+ requites --break-system-packages argument to install modules
-## Alternatively can be done via apt-get install python-agent360 but it is not yet added to any ubuntu repos
-check_ubuntu_release
 
-if [[ -f /etc/systemd/system/agent360.service ]] || [[ -f /etc/systemd/system/agent360 ]] ; then
-  handle_cmd 'rm -f /etc/systemd/system/agent360*' 'The configuration of the service agent360 has been removed'
-  handle_cmd 'systemctl reset-failed' 'The systemd data has been updated'
-else
-  echo -e "\\e[33m[WARNING] The configuration file of the service agent360 is not found\n\t  Probably, it was removed earlier\\e[m"
-fi
+remove_link_to_venv() {
+  local link_path="$1"
+  local expected_target="$2"
 
-if [[ -f /etc/agent360.ini ]] || [[ -f /etc/agent360-token.ini ]] || [[ -d /root/.360monitoring ]] ; then
-  handle_cmd 'rm -f /etc/agent360*' "The 360 Monitoring configuration files have been deleted `echo`"
-  handle_cmd 'rm -rf /root/.360monitoring' "The /root/.360monitoring folder have been deleted `echo`"
-  echo -e "\\e[33m[INFO] To install agent360 on cPanel Run the initialization script -> /scripts/initialize_360monitoring\\e[m"
-else
-  echo -e "\\e[33m[WARNING] The 360 Monitoring configuration files are not found\n\t  Probably, they were removed earlier\\e[m"
-fi
-#if test -d /usr/local/cpanel/ 2>/dev/null;then
- # echo -e "\\e[34m[NOTE] This is cPanel server. Skipping removal of /etc/agent360.ini file !\\e[m"
-  #echo -e "\\e[34m[NOTE] Removing file /etc/agent360-token.ini and /root/.360monitoring/ folder !\\e[m"
-  #handle_cmd 'rm -rf /etc/agent360-token.ini || rm -rf /root/.360monitoring/'
-#else
- # echo -e "\\e[34m[NOTE] This is not cPanel server. Removing all agent360 ini files from /etc folder !\\e[m"
-  if [[ -f /etc/agent360-token.ini ]] ; then
-    handle_cmd 'rm -f /etc/agent360*' "The 360 Monitoring configuration files have been deleted `echo`"
-  else
-    echo -e "\\e[33m[WARNING] The 360 Monitoring configuration files are not found\n\t  Probably, they were removed earlier\\e[m"
+  if [ -L "$link_path" ] && [ "$(readlink -f "$link_path")" = "$expected_target" ]; then
+    run "Removed $link_path" rm -f "$link_path"
+    return
   fi
-#fi
-if [[ -f /var/log/agent360.log ]] || [[ -f /var/log/agent360-install.log ]]; then
-  echo
-  read -r -p "Do you want to remove agent360 logs (y/n)? " choice
-  case "$choice" in
-    y|Y ) handle_cmd 'rm -f /var/log/agent360*' 'The logs have been removed';;
-    n|N ) echo -e "\\e[32m[SUCCESS] The logs remain on the server\n\t  You might remove them manually later\\e[m";;
-    * ) echo -e "\\e[31m[ERROR] The input is invalid! The logs have not been removed\\e[m";;
-  esac
+
+  if [ -L "$link_path" ]; then
+    run "Removed stale symlink $link_path" rm -f "$link_path"
+  fi
+}
+
+pip_uninstall() {
+  local python_bin="$1"
+  local -a pip_args=(uninstall -y agent360)
+
+  if "$python_bin" -c 'import os, sysconfig; raise SystemExit(not os.path.exists(os.path.join(sysconfig.get_path("stdlib"), "EXTERNALLY-MANAGED")))'; then
+    pip_args+=(--break-system-packages)
+  fi
+
+  if "$python_bin" -m pip show agent360 >/dev/null 2>&1; then
+    run "Removed the agent360 Python package" "$python_bin" -m pip "${pip_args[@]}"
+  else
+    echo "[INFO] agent360 is not installed for $python_bin."
+  fi
+}
+
+if command -v systemctl >/dev/null 2>&1; then
+  if systemctl list-unit-files agent360.service >/dev/null 2>&1 || [ -f "$service_file" ]; then
+    run "Stopped agent360 service" systemctl stop agent360.service
+    run "Disabled agent360 service" systemctl disable agent360.service
+  fi
+  if [ -f "$service_file" ]; then
+    run "Removed the systemd service definition" rm -f "$service_file"
+    run "Reloaded systemd" systemctl daemon-reload
+    systemctl reset-failed agent360.service >/dev/null 2>&1 || true
+  fi
 fi
 
-if [[ -d $agent360_venv ]];then
-  echo -e "\\e[33m[INFO]Removing agent360 and hello360 symlinks\\e[m"
-  handle_cmd unlink /usr/local/bin/agent360
-  handle_cmd unlink /usr/local/bin/hello360
-  echo
-  echo -e "\\e[33m[INFO] Python Virtual environment folder  $venv_dir  exists\\e[m "
-  read -r -p "[Q] Do you want to delete it (y/n)? " venv_choice
-  echo
-if [[ $venv_choice == "y" ]];then
-  rm -rf $agent360_venv
-  echo -e "\\e[32m[SUCCESS] Python virtual environment $agent360_venv was removed\\e[m"
-  # echo -e "\\e[32m[SUCCESS] Removing venv symlinks\\e[m"
-  # No need to call remove symlinks because we are removing the venv folder anyway
-  # remove_symlinks_venv
-  sleep 1
-  echo -e "\\e[32m[SUCCESS] /usr/local/bin/hello360 and /usr/local/bin/agent360 removed\\e[m"
-fi
+if [ -x /etc/init.d/agent360 ]; then
+  run "Stopped the SysV service" service agent360 stop
+  run "Removed the SysV service definition" rm -f /etc/init.d/agent360
 fi
 
-echo
-echo -e "\\e[33m[INFO] Please wait for 15 minutes and, then, remove the server from 360 Monitoring > Servers\\e[m"
+# Remove the agent360 symlinks created by either a venv install or a pip install.
+# This is intentionally broader than the old venv-only cleanup and avoids leaving
+# dead command links behind on systems that installed the agent globally.
+remove_link_to_venv /usr/local/bin/agent360 "$venv_dir/bin/agent360"
+remove_link_to_venv /usr/local/bin/hello360 "$venv_dir/bin/hello360"
+if [ -e /usr/local/bin/agent360 ] && [ "$(basename /usr/local/bin/agent360)" = "agent360" ]; then
+  run "Removed /usr/local/bin/agent360" rm -f /usr/local/bin/agent360
+fi
+if [ -e /usr/local/bin/hello360 ] && [ "$(basename /usr/local/bin/hello360)" = "hello360" ]; then
+  run "Removed /usr/local/bin/hello360" rm -f /usr/local/bin/hello360
+fi
+
+if [ -x "$venv_dir/bin/python" ]; then
+  read -r -p "Remove the agent360 virtual environment at $venv_dir? [y/N] " remove_venv
+  if [[ "$remove_venv" =~ ^[Yy]$ ]]; then
+    run "Removed the agent360 virtual environment" rm -rf "$venv_dir"
+  else
+    pip_uninstall "$venv_dir/bin/python"
+    echo "[INFO] Kept $venv_dir; its remaining packages were not removed."
+  fi
+fi
+
+if command -v python3 >/dev/null 2>&1; then
+  pip_uninstall python3
+fi
+
+if id agent360 >/dev/null 2>&1; then
+  run "Deleted the agent360 system user" userdel agent360
+fi
+
+for path in /etc/agent360.ini /etc/agent360-token.ini "$requirements_file"; do
+  if [ -e "$path" ]; then
+    run "Removed $path" rm -f "$path"
+  fi
+done
+
+if [ -d /root/.360monitoring ]; then
+  run "Removed /root/.360monitoring" rm -rf /root/.360monitoring
+fi
+
+if [ -e /var/log/agent360.log ] || [ -e /var/log/agent360-install.log ]; then
+  read -r -p "Remove agent360 logs? [y/N] " remove_logs
+  if [[ "$remove_logs" =~ ^[Yy]$ ]]; then
+    run "Removed agent360 logs" rm -f /var/log/agent360.log /var/log/agent360-install.log
+  else
+    echo "[INFO] Logs were kept."
+  fi
+fi
+
+echo "[SUCCESS] agent360 uninstall is complete."
