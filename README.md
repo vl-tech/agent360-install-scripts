@@ -1,73 +1,64 @@
-## WARNING
+# Agent360 installer and uninstaller
 
-```ruby
-Due to how cPanel integrates 360 monitoring plugin the script might not always work causing 404 errors. Please rever to below article
-```
+This repository contains bash scripts for installing and removing the Agent360 monitoring agent on Linux hosts.
 
-[360 monitoring plugin error 404 Error](https://support.cpanel.net/hc/en-us/articles/30814926304151-360-monitoring-plugin-error-404-Error-POST-https-api-monitoring360-io-metrics-get-metrics-data-404)
+## Requirements
 
-## Agent 360 script for installation of 360 monitoring
-- Available usage options
+- Root access
+- A supported Linux distribution
+- A valid Agent360 token or user ID
+- Bash available on the target host
 
-```bash
-./agent360.sh --help
-Usage: Positional arguments for agents360.sh script.
-
-./agent360.sh [--args| ARG..] [--args| ARG..]
-
---help|--h                       Displays this information
-
---skip-deps --skip-dep-install  Skip OS package instalation
-
---use-venv                     Install agent in virtual environment
-
---force                         Install even if agent360 is already instaled
-
---token <token value>           360 Monitoring account User ID:
-
-```
-
-- Positional argument error handling
-```bash
-./agent360.sh -h
-[CRITICAL] Invalid Token. Please enter valid User ID
-
-[WARNING] You can check it at 360monitoring.com -> Servers -> Add server
-
-Direct page URL: https://app.360monitoring.com/servers/overview
-```
-
-
-- Installation example with token and virtual environment
-```bash
-./agent360.sh token --use-venv 
-
-```
-
-![Installation](/screenshots/Installation.png)
-
-- Installation under Cloudlinux using the initialization script /scripts/initialize_360monitoring
-
-
-![Cloudlinux Installation](/screenshots/Installation-Cloudlinux-cPanel-initialization.png)
-
-
-
-- Agent service working with venv
-
-![usage](screenshots/service.png)
-
-
-## Regular installation requires only a token to run.
+## Install
 
 ```bash
-/agent360.sh token
+sudo ./agent360.sh --token <token>
 ```
 
-## uninstallation script works for both venv version and non-venv
+Additional options:
 
 ```bash
-./uninstall-agent360.sh
+sudo ./agent360.sh --help
 ```
 
-![uninstallation](screenshots/uninstalation.png)
+Common flags:
+
+- --token <token> : Agent360 token or user ID
+- --tags <tag1,tag2> : Optional comma-separated tags
+- --use-venv : Install in /opt/agent360-venv
+- --skip-deps : Skip OS package installation
+- --force : Reinstall or continue despite existing install state
+- --add-websites : Enable website auto-monitoring when supported by the target host
+
+Example with a virtual environment:
+
+```bash
+sudo ./agent360.sh --token <token> --use-venv --tags prod,web
+```
+
+## Uninstall
+
+```bash
+sudo ./uninstall-agent360.sh
+```
+
+The uninstaller:
+
+- stops and disables the installed service
+- removes the agent360 symlinks created by a venv or system install
+- removes the venv only when the user confirms it
+- removes config and token files that belong to this install
+- optionally removes the agent360 log files
+
+## Notes
+
+- The scripts manage both system-level installs and venv-based installs.
+- Service setup covers systemd, SysV, and the FreeBSD branch when applicable.
+- The venv install keeps the agent executable isolated under /opt/agent360-venv while still wiring the service to the correct binary.
+- The project intentionally avoids recursive ownership changes of the whole venv; only the executable entrypoints are adjusted.
+
+## Related warning
+
+cPanel integrations may sometimes return 404 errors depending on the hosting environment. See the official cPanel documentation for platform-specific guidance:
+
+https://support.cpanel.net/hc/en-us/articles/30814926304151-360-monitoring-plugin-error-404-Error-POST-https-api-monitoring360-io-metrics-get-metrics-data-404
